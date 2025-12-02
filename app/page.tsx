@@ -20,7 +20,7 @@ export default function Home() {
             <a href="#services" className=" hover:text-primary transition-colors text-xl tracking-wide">Services</a>
             <a href="#about" className=" hover:text-primary transition-colors text-xl tracking-wide">About</a>
             <a href="#location" className=" hover:text-primary transition-colors text-xl tracking-wide">Location</a>
-            <a href="#contact" className="bg-primary text-white px-5 py-2 rounded-full hover:bg-primary-dark transition-colors text-xl tracking-wide">
+            <a href="/book" className="bg-primary text-white px-5 py-2 rounded-full hover:bg-primary-dark transition-colors text-xl tracking-wide">
               Book Now
             </a>
           </div>
@@ -40,7 +40,7 @@ export default function Home() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
               <a
-                href="#contact"
+                href="/book"
                 className="bg-primary text-white px-8 py-3 rounded-full text-lg font-medium hover:bg-primary-dark transition-colors"
               >
                 Schedule Appointment
