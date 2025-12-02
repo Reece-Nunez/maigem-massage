@@ -4,7 +4,7 @@ import { z } from 'zod'
 import { addMinutes, parseISO, setHours, setMinutes } from 'date-fns'
 import { fromZonedTime } from 'date-fns-tz'
 import { v4 as uuidv4 } from 'uuid'
-import { sendConfirmationEmail } from '@/lib/utils/email'
+import { sendRequestReceivedEmail, sendAdminNotificationEmail } from '@/lib/utils/email'
 
 const BUSINESS_TIMEZONE = 'America/Chicago'
 
@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create appointment
+    // Create appointment with pending status
     const cancellationToken = uuidv4()
     const { data: appointment, error: appointmentError } = await supabase
       .from('appointments')
@@ -126,7 +126,7 @@ export async function POST(request: NextRequest) {
         end_datetime: endDatetime.toISOString(),
         client_notes: notes || null,
         cancellation_token: cancellationToken,
-        status: 'confirmed',
+        status: 'pending',
       })
       .select(`
         *,
@@ -140,12 +140,20 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create appointment' }, { status: 500 })
     }
 
-    // Send confirmation email (don't block on this)
-    sendConfirmationEmail({
+    // Send emails (don't block on these)
+    // 1. Send "request received" email to client
+    sendRequestReceivedEmail({
       appointment: appointment,
       service: appointment.service,
       client: appointment.client,
-    }).catch(err => console.error('Failed to send confirmation email:', err))
+    }).catch(err => console.error('Failed to send request received email:', err))
+
+    // 2. Send notification email to admin (Crystal)
+    sendAdminNotificationEmail({
+      appointment: appointment,
+      service: appointment.service,
+      client: appointment.client,
+    }).catch(err => console.error('Failed to send admin notification email:', err))
 
     return NextResponse.json({
       success: true,

@@ -37,26 +37,6 @@ export default function BookingSuccessPage() {
     return format(date, 'h:mm a')
   }
 
-  const getGoogleCalendarUrl = () => {
-    if (!appointment) return '#'
-
-    const startDate = new Date(appointment.start_datetime)
-    const endDate = new Date(appointment.end_datetime)
-
-    const formatGoogleDate = (date: Date) => format(date, "yyyyMMdd'T'HHmmss'Z'")
-
-    const params = new URLSearchParams({
-      action: 'TEMPLATE',
-      text: `${appointment.service.name} - MaiGem Massage`,
-      dates: `${formatGoogleDate(startDate)}/${formatGoogleDate(endDate)}`,
-      details: `Your ${appointment.service.name} appointment with Crystal Warren at MaiGem Massage.\n\nDuration: ${appointment.service.duration_minutes} minutes\nPrice: ${appointment.service.price_display || 'Price Varies'}\n\nPayment accepted: Cash, Card, Venmo (@lenaecrys)`,
-      location: 'Om Yoga Wellness Building, 205 E Chestnut Ave, Ponca City, OK 74604',
-      ctz: 'America/Chicago'
-    })
-
-    return `https://calendar.google.com/calendar/render?${params.toString()}`
-  }
-
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -101,22 +81,40 @@ export default function BookingSuccessPage() {
       </header>
 
       <main className="max-w-2xl mx-auto px-6 py-12">
-        {/* Success Message */}
+        {/* Request Received Message */}
         <div className="text-center mb-8">
-          <div className="w-20 h-20 bg-primary/10 rounded-full flex items-center justify-center mx-auto mb-6">
-            <svg className="w-10 h-10 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          <div className="w-20 h-20 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <svg className="w-10 h-10 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Booking Confirmed!</h1>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Request Received!</h1>
           <p className="text-text-muted">
-            Your appointment has been scheduled. A confirmation email has been sent to {appointment.client.email}.
+            Your appointment request has been submitted and is awaiting approval.
           </p>
         </div>
 
+        {/* Status Info */}
+        <Card className="p-6 mb-8 bg-yellow-50 border-yellow-200">
+          <div className="flex items-start gap-4">
+            <div className="w-10 h-10 bg-yellow-200 rounded-full flex items-center justify-center flex-shrink-0">
+              <span className="text-xl">⏳</span>
+            </div>
+            <div>
+              <h2 className="font-semibold text-foreground mb-2">What happens next?</h2>
+              <ol className="text-sm text-text-muted space-y-2 list-decimal list-inside">
+                <li>We&apos;ve sent you a confirmation email that your request was received</li>
+                <li>Crystal will review your request and respond shortly</li>
+                <li>Once approved, you&apos;ll receive a confirmation email with calendar links</li>
+                <li>If the time doesn&apos;t work, you&apos;ll be notified to choose another time</li>
+              </ol>
+            </div>
+          </div>
+        </Card>
+
         {/* Appointment Details */}
         <Card className="p-6 mb-8">
-          <h2 className="text-xl font-semibold text-foreground mb-6">Appointment Details</h2>
+          <h2 className="text-xl font-semibold text-foreground mb-6">Requested Appointment</h2>
 
           <div className="space-y-4">
             <div className="flex justify-between">
@@ -144,44 +142,21 @@ export default function BookingSuccessPage() {
 
             <hr className="border-secondary/50" />
 
+            <div className="flex justify-between items-center">
+              <span className="text-text-muted">Status</span>
+              <span className="px-3 py-1 bg-yellow-100 text-yellow-700 rounded-full text-sm font-medium">
+                Pending Approval
+              </span>
+            </div>
+
+            <hr className="border-secondary/50" />
+
             <div>
               <span className="text-text-muted text-sm">Location</span>
               <p className="font-medium">Om Yoga Wellness Building</p>
               <p className="text-sm text-text-muted">205 E Chestnut Ave</p>
               <p className="text-sm text-text-muted">Ponca City, OK 74604</p>
             </div>
-          </div>
-        </Card>
-
-        {/* Add to Calendar */}
-        <Card className="p-6 mb-8">
-          <h2 className="text-lg font-semibold text-foreground mb-4">Add to Your Calendar</h2>
-          <div className="flex flex-col sm:flex-row gap-4">
-            <a
-              href={getGoogleCalendarUrl()}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex-1"
-            >
-              <Button variant="outline" className="w-full">
-                <svg className="w-5 h-5 mr-2" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M12 0C5.372 0 0 5.372 0 12s5.372 12 12 12 12-5.372 12-12S18.628 0 12 0zm6.24 7.51h-1.88v8.98h-8.72V7.51H5.76v10.74h12.48V7.51zM8.88 6.02V3.28h6.24v2.74H8.88z"/>
-                </svg>
-                Google Calendar
-              </Button>
-            </a>
-            <a
-              href={`/api/calendar/ics/${appointment.id}`}
-              download={`maigem-massage-${format(new Date(appointment.start_datetime), 'yyyy-MM-dd')}.ics`}
-              className="flex-1"
-            >
-              <Button variant="outline" className="w-full">
-                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-                Apple Calendar
-              </Button>
-            </a>
           </div>
         </Card>
 
@@ -213,19 +188,29 @@ export default function BookingSuccessPage() {
           </ul>
         </Card>
 
+        {/* Contact Info */}
+        <Card className="p-6 mb-8">
+          <h2 className="text-lg font-semibold text-foreground mb-2">Questions?</h2>
+          <p className="text-text-muted mb-4">
+            If you have any questions about your booking request, feel free to reach out:
+          </p>
+          <div className="flex flex-col sm:flex-row gap-4">
+            <a href="tel:+15803049861" className="flex-1">
+              <Button variant="outline" className="w-full">
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
+                </svg>
+                (580) 304-9861
+              </Button>
+            </a>
+          </div>
+        </Card>
+
         {/* Actions */}
-        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+        <div className="flex justify-center">
           <Link href="/">
             <Button variant="outline">Return Home</Button>
           </Link>
-          <a href="tel:+15803049861">
-            <Button>
-              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
-              </svg>
-              Questions? Call Us
-            </Button>
-          </a>
         </div>
       </main>
     </div>

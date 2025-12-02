@@ -24,8 +24,10 @@ export default async function AppointmentsPage({
     `)
     .order('start_datetime', { ascending: filter === 'upcoming' })
 
-  if (filter === 'upcoming') {
-    query = query.gte('start_datetime', now.toISOString()).neq('status', 'cancelled')
+  if (filter === 'pending') {
+    query = query.eq('status', 'pending')
+  } else if (filter === 'upcoming') {
+    query = query.gte('start_datetime', now.toISOString()).eq('status', 'confirmed')
   } else if (filter === 'past') {
     query = query.lt('start_datetime', now.toISOString())
   } else if (filter === 'cancelled') {
@@ -34,7 +36,14 @@ export default async function AppointmentsPage({
 
   const { data: appointments } = await query.limit(50)
 
+  // Get pending count for badge
+  const { count: pendingCount } = await supabase
+    .from('appointments')
+    .select('*', { count: 'exact', head: true })
+    .eq('status', 'pending')
+
   const filters = [
+    { value: 'pending', label: 'Pending', count: pendingCount || 0 },
     { value: 'upcoming', label: 'Upcoming' },
     { value: 'past', label: 'Past' },
     { value: 'cancelled', label: 'Cancelled' },
@@ -46,18 +55,27 @@ export default async function AppointmentsPage({
       <h1 className="text-3xl font-bold text-foreground mb-8">Appointments</h1>
 
       {/* Filters */}
-      <div className="flex gap-2 mb-6">
+      <div className="flex gap-2 mb-6 flex-wrap">
         {filters.map((f) => (
           <a
             key={f.value}
             href={`/admin/appointments?filter=${f.value}`}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+            className={`px-4 py-2 rounded-full text-sm font-medium transition-colors flex items-center gap-2 ${
               filter === f.value
-                ? 'bg-primary text-white'
-                : 'bg-secondary/30 text-foreground hover:bg-secondary/50'
+                ? f.value === 'pending' ? 'bg-yellow-500 text-white' : 'bg-primary text-white'
+                : f.value === 'pending' && f.count && f.count > 0
+                  ? 'bg-yellow-100 text-yellow-700 hover:bg-yellow-200'
+                  : 'bg-secondary/30 text-foreground hover:bg-secondary/50'
             }`}
           >
             {f.label}
+            {f.count !== undefined && f.count > 0 && (
+              <span className={`px-2 py-0.5 rounded-full text-xs ${
+                filter === f.value ? 'bg-white/20' : 'bg-yellow-500 text-white'
+              }`}>
+                {f.count}
+              </span>
+            )}
           </a>
         ))}
       </div>
