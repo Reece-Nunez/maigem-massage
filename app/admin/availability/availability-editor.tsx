@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button'
 interface DayAvailability {
   value: number
   label: string
-  is_available: boolean
+  is_active: boolean
   start_time: string
   end_time: string
   id?: string
@@ -74,20 +74,20 @@ export function AvailabilityEditor({ initialAvailability }: AvailabilityEditorPr
           <div
             key={day.value}
             className={`flex items-center gap-4 p-4 rounded-lg transition-colors ${
-              day.is_available ? 'bg-primary/5' : 'bg-secondary/20'
+              day.is_active ? 'bg-primary/5' : 'bg-secondary/20'
             }`}
           >
             <label className="flex items-center gap-3 w-32">
               <input
                 type="checkbox"
-                checked={day.is_available}
-                onChange={(e) => updateDay(day.value, { is_available: e.target.checked })}
+                checked={day.is_active}
+                onChange={(e) => updateDay(day.value, { is_active: e.target.checked })}
                 className="w-5 h-5 rounded border-secondary text-primary focus:ring-primary"
               />
               <span className="font-medium text-foreground">{day.label}</span>
             </label>
 
-            {day.is_available && (
+            {day.is_active && (
               <div className="flex items-center gap-2 flex-1">
                 <select
                   value={day.start_time}
@@ -115,7 +115,7 @@ export function AvailabilityEditor({ initialAvailability }: AvailabilityEditorPr
               </div>
             )}
 
-            {!day.is_available && (
+            {!day.is_active && (
               <span className="text-text-muted text-sm">Closed</span>
             )}
           </div>

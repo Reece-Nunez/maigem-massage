@@ -23,11 +23,14 @@ export default async function AvailabilityPage() {
   // Create a map of availability by day
   const availabilityByDay = DAYS_OF_WEEK.map((day) => {
     const dayAvailability = availability?.find((a) => a.day_of_week === day.value)
+    // Strip seconds from time if present (database returns HH:mm:ss, we need HH:mm)
+    const startTime = dayAvailability?.start_time?.slice(0, 5) ?? '09:00'
+    const endTime = dayAvailability?.end_time?.slice(0, 5) ?? '17:00'
     return {
       ...day,
-      is_available: dayAvailability?.is_available ?? false,
-      start_time: dayAvailability?.start_time ?? '09:00',
-      end_time: dayAvailability?.end_time ?? '17:00',
+      is_active: dayAvailability?.is_active ?? false,
+      start_time: startTime,
+      end_time: endTime,
       id: dayAvailability?.id,
     }
   })

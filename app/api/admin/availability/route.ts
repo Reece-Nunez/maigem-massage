@@ -7,7 +7,7 @@ const availabilitySchema = z.object({
   availability: z.array(
     z.object({
       value: z.number().min(0).max(6),
-      is_available: z.boolean(),
+      is_active: z.boolean(),
       start_time: z.string(),
       end_time: z.string(),
       id: z.string().optional(),
@@ -55,7 +55,7 @@ export async function PUT(request: NextRequest) {
         .upsert(
           {
             day_of_week: day.value,
-            is_available: day.is_available,
+            is_active: day.is_active,
             start_time: day.start_time,
             end_time: day.end_time,
           },

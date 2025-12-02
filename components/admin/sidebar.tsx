@@ -27,18 +27,18 @@ export function AdminSidebar() {
 
   return (
     <aside className="w-64 bg-white border-r border-secondary/30 min-h-screen flex flex-col">
-      <div className="p-6 border-b border-secondary/30">
+      <div className="p-2 border-b border-secondary/30">
         <Link href="/" className="flex items-center gap-3">
           <Image
             src="/maigem-logo.png"
             alt="MaiGem Massage"
             width={40}
             height={40}
-            className="rounded-full"
+            className="h-24 w-24 rounded-full"
           />
           <div>
-            <h1 className="font-bold text-foreground">MaiGem</h1>
-            <p className="text-xs text-text-muted">Admin Panel</p>
+            <h1 className="text-md font-bold text-foreground">MaiGem Massage</h1>
+            <p className="text-sm text-text-muted">Admin Panel</p>
           </div>
         </Link>
       </div>
