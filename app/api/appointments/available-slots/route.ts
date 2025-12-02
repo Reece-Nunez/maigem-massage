@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { parseISO, startOfDay, endOfDay, addMinutes, format, isBefore, isAfter, setHours, setMinutes } from 'date-fns'
 import { toZonedTime, fromZonedTime } from 'date-fns-tz'
 
@@ -19,7 +19,8 @@ export async function GET(request: NextRequest) {
       )
     }
 
-    const supabase = await createClient()
+    // Use admin client to bypass RLS for availability checking
+    const supabase = createAdminClient()
 
     // Get service duration
     const { data: service, error: serviceError } = await supabase
@@ -100,7 +101,10 @@ export async function GET(request: NextRequest) {
 
     while (isBefore(currentTime, endTime)) {
       const slotStart = fromZonedTime(currentTime, BUSINESS_TIMEZONE)
-      const slotEnd = addMinutes(slotStart, service.duration_minutes + bufferMinutes)
+      // For conflict checking, use service duration only (not buffer)
+      const slotEnd = addMinutes(slotStart, service.duration_minutes)
+      // For scheduling, add buffer after the appointment
+      const slotEndWithBuffer = addMinutes(slotStart, service.duration_minutes + bufferMinutes)
 
       // Check if slot is in the past
       const isPast = isBefore(currentTime, minimumBookingTime)
@@ -112,14 +116,20 @@ export async function GET(request: NextRequest) {
       )
 
       // Check for conflicts with existing appointments
+      // A conflict exists if the new slot overlaps with any existing appointment (plus buffer)
       const hasConflict = (appointments || []).some((appt) => {
         const apptStart = new Date(appt.start_datetime)
         const apptEnd = new Date(appt.end_datetime)
-        return (
-          (slotStart >= apptStart && slotStart < apptEnd) ||
-          (slotEnd > apptStart && slotEnd <= apptEnd) ||
-          (slotStart <= apptStart && slotEnd >= apptEnd)
-        )
+
+        // Add buffer before the existing appointment (new slot must end before apptStart - buffer)
+        const apptStartWithBuffer = addMinutes(apptStart, -bufferMinutes)
+
+        // Two time ranges overlap if one starts before the other ends AND ends after the other starts
+        // New slot: slotStart to slotEnd
+        // Existing appointment (with buffer): apptStartWithBuffer to apptEnd
+        const overlaps = slotStart < apptEnd && slotEnd > apptStartWithBuffer
+
+        return overlaps
       })
 
       // Check for conflicts with blocked times

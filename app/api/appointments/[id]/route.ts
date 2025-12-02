@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 
 export async function GET(
   request: NextRequest,
@@ -7,7 +7,7 @@ export async function GET(
 ) {
   try {
     const { id } = await params
-    const supabase = await createClient()
+    const supabase = createAdminClient()
 
     const { data: appointment, error } = await supabase
       .from('appointments')
@@ -20,10 +20,22 @@ export async function GET(
       .single()
 
     if (error || !appointment) {
+      console.error('Error fetching appointment:', error)
       return NextResponse.json({ error: 'Appointment not found' }, { status: 404 })
     }
 
-    return NextResponse.json(appointment)
+    // Don't expose sensitive data to public
+    return NextResponse.json({
+      id: appointment.id,
+      start_datetime: appointment.start_datetime,
+      end_datetime: appointment.end_datetime,
+      status: appointment.status,
+      service: appointment.service,
+      client: {
+        first_name: appointment.client.first_name,
+        email: appointment.client.email,
+      },
+    })
   } catch (error) {
     console.error('Error fetching appointment:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
