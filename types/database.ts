@@ -6,7 +6,7 @@ export type Json =
   | { [key: string]: Json | undefined }
   | Json[]
 
-export interface Database {
+export type Database = {
   public: {
     Tables: {
       services: {
@@ -46,6 +46,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       availability: {
         Row: {
@@ -75,6 +76,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       blocked_times: {
         Row: {
@@ -101,6 +103,7 @@ export interface Database {
           is_all_day?: boolean
           created_at?: string
         }
+        Relationships: []
       }
       clients: {
         Row: {
@@ -136,6 +139,7 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: []
       }
       appointments: {
         Row: {
@@ -183,6 +187,22 @@ export interface Database {
           created_at?: string
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "appointments_client_id_fkey"
+            columns: ["client_id"]
+            isOneToOne: false
+            referencedRelation: "clients"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "appointments_service_id_fkey"
+            columns: ["service_id"]
+            isOneToOne: false
+            referencedRelation: "services"
+            referencedColumns: ["id"]
+          }
+        ]
       }
       admin_users: {
         Row: {
@@ -197,6 +217,7 @@ export interface Database {
           auth_user_id?: string
           created_at?: string
         }
+        Relationships: []
       }
       admin_settings: {
         Row: {
@@ -214,6 +235,7 @@ export interface Database {
           value?: Json
           updated_at?: string
         }
+        Relationships: []
       }
     }
     Views: {
@@ -223,6 +245,9 @@ export interface Database {
       [_ in never]: never
     }
     Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
       [_ in never]: never
     }
   }
