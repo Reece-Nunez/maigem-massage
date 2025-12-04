@@ -4,7 +4,7 @@ import { format } from 'date-fns'
 import { toZonedTime } from 'date-fns-tz'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import type { Appointment, Service } from '@/types/database'
+import type { Appointment, Service, Client } from '@/types/database'
 
 const BUSINESS_TIMEZONE = 'America/Chicago'
 
@@ -20,15 +20,17 @@ export default async function ClientDetailPage({
   const { id } = await params
   const supabase = await createClient()
 
-  const { data: client, error } = await supabase
+  const { data: clientData, error } = await supabase
     .from('clients')
     .select('*')
     .eq('id', id)
     .single()
 
-  if (error || !client) {
+  if (error || !clientData) {
     notFound()
   }
+
+  const client = clientData as Client
 
   const { data: appointmentsData } = await supabase
     .from('appointments')
