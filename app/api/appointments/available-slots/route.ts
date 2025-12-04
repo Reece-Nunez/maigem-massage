@@ -157,6 +157,7 @@ export async function GET(request: NextRequest) {
     })
   } catch (error) {
     console.error('Error in available-slots API:', error)
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+    const errorMessage = error instanceof Error ? error.message : 'Internal server error'
+    return NextResponse.json({ error: errorMessage }, { status: 500 })
   }
 }
