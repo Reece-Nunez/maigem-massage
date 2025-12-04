@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation'
 
 interface PendingAppointmentActionsProps {
   appointmentId: string
-  token: string
+  token: string | null
 }
 
 export function PendingAppointmentActions({
