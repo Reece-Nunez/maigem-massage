@@ -144,7 +144,7 @@ export interface Database {
           service_id: string
           start_datetime: string
           end_datetime: string
-          status: 'confirmed' | 'cancelled' | 'completed' | 'no_show'
+          status: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no_show'
           client_notes: string | null
           admin_notes: string | null
           reminder_sent: boolean
@@ -159,7 +159,7 @@ export interface Database {
           service_id: string
           start_datetime: string
           end_datetime: string
-          status?: 'confirmed' | 'cancelled' | 'completed' | 'no_show'
+          status?: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no_show'
           client_notes?: string | null
           admin_notes?: string | null
           reminder_sent?: boolean
@@ -174,7 +174,7 @@ export interface Database {
           service_id?: string
           start_datetime?: string
           end_datetime?: string
-          status?: 'confirmed' | 'cancelled' | 'completed' | 'no_show'
+          status?: 'pending' | 'confirmed' | 'cancelled' | 'completed' | 'no_show'
           client_notes?: string | null
           admin_notes?: string | null
           reminder_sent?: boolean
