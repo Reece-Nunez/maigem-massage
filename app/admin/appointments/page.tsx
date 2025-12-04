@@ -3,8 +3,14 @@ import { Card } from '@/components/ui/card'
 import { format } from 'date-fns'
 import { toZonedTime } from 'date-fns-tz'
 import { AppointmentActions } from './appointment-actions'
+import type { Appointment, Client, Service } from '@/types/database'
 
 const BUSINESS_TIMEZONE = 'America/Chicago'
+
+type AppointmentWithRelations = Appointment & {
+  client: Client | null
+  service: Service | null
+}
 
 export default async function AppointmentsPage({
   searchParams,
@@ -15,26 +21,50 @@ export default async function AppointmentsPage({
   const supabase = await createClient()
   const now = new Date()
 
-  let query = supabase
-    .from('appointments')
-    .select(`
-      *,
-      client:clients(*),
-      service:services(*)
-    `)
-    .order('start_datetime', { ascending: filter === 'upcoming' })
+  let appointments: AppointmentWithRelations[] = []
 
   if (filter === 'pending') {
-    query = query.eq('status', 'pending')
+    const { data } = await supabase
+      .from('appointments')
+      .select(`*, client:clients(*), service:services(*)`)
+      .eq('status', 'pending')
+      .order('start_datetime', { ascending: true })
+      .limit(50)
+    appointments = (data || []) as AppointmentWithRelations[]
   } else if (filter === 'upcoming') {
-    query = query.gte('start_datetime', now.toISOString()).eq('status', 'confirmed')
+    const { data } = await supabase
+      .from('appointments')
+      .select(`*, client:clients(*), service:services(*)`)
+      .gte('start_datetime', now.toISOString())
+      .eq('status', 'confirmed')
+      .order('start_datetime', { ascending: true })
+      .limit(50)
+    appointments = (data || []) as AppointmentWithRelations[]
   } else if (filter === 'past') {
-    query = query.lt('start_datetime', now.toISOString())
+    const { data } = await supabase
+      .from('appointments')
+      .select(`*, client:clients(*), service:services(*)`)
+      .lt('start_datetime', now.toISOString())
+      .order('start_datetime', { ascending: false })
+      .limit(50)
+    appointments = (data || []) as AppointmentWithRelations[]
   } else if (filter === 'cancelled') {
-    query = query.eq('status', 'cancelled')
+    const { data } = await supabase
+      .from('appointments')
+      .select(`*, client:clients(*), service:services(*)`)
+      .eq('status', 'cancelled')
+      .order('start_datetime', { ascending: false })
+      .limit(50)
+    appointments = (data || []) as AppointmentWithRelations[]
+  } else {
+    // 'all' filter
+    const { data } = await supabase
+      .from('appointments')
+      .select(`*, client:clients(*), service:services(*)`)
+      .order('start_datetime', { ascending: false })
+      .limit(50)
+    appointments = (data || []) as AppointmentWithRelations[]
   }
-
-  const { data: appointments } = await query.limit(50)
 
   // Get pending count for badge
   const { count: pendingCount } = await supabase

@@ -4,8 +4,13 @@ import { format } from 'date-fns'
 import { toZonedTime } from 'date-fns-tz'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import type { Appointment, Service } from '@/types/database'
 
 const BUSINESS_TIMEZONE = 'America/Chicago'
+
+type AppointmentWithService = Appointment & {
+  service: Service | null
+}
 
 export default async function ClientDetailPage({
   params,
@@ -25,19 +30,18 @@ export default async function ClientDetailPage({
     notFound()
   }
 
-  const { data: appointments } = await supabase
+  const { data: appointmentsData } = await supabase
     .from('appointments')
-    .select(`
-      *,
-      service:services(*)
-    `)
+    .select(`*, service:services(*)`)
     .eq('client_id', id)
     .order('start_datetime', { ascending: false })
 
-  const completedCount = appointments?.filter((a) => a.status === 'completed').length || 0
-  const upcomingCount = appointments?.filter(
+  const appointments = (appointmentsData || []) as AppointmentWithService[]
+
+  const completedCount = appointments.filter((a) => a.status === 'completed').length
+  const upcomingCount = appointments.filter(
     (a) => a.status === 'confirmed' && new Date(a.start_datetime) > new Date()
-  ).length || 0
+  ).length
 
   return (
     <div>
@@ -74,7 +78,7 @@ export default async function ClientDetailPage({
         <Card className="p-6">
           <p className="text-text-muted text-sm">Total Appointments</p>
           <p className="text-3xl font-bold text-primary mt-1">
-            {appointments?.length || 0}
+            {appointments.length}
           </p>
         </Card>
         <Card className="p-6">
@@ -91,7 +95,7 @@ export default async function ClientDetailPage({
       <Card className="p-6">
         <h2 className="text-xl font-bold text-foreground mb-6">Appointment History</h2>
 
-        {appointments && appointments.length > 0 ? (
+        {appointments.length > 0 ? (
           <div className="space-y-4">
             {appointments.map((appointment) => {
               const startDate = toZonedTime(

@@ -4,8 +4,14 @@ import { format, startOfDay, endOfDay, startOfWeek, endOfWeek } from 'date-fns'
 import { toZonedTime } from 'date-fns-tz'
 import Link from 'next/link'
 import { PendingAppointmentActions } from './pending-actions'
+import type { Appointment, Client, Service } from '@/types/database'
 
 const BUSINESS_TIMEZONE = 'America/Chicago'
+
+type AppointmentWithRelations = Appointment & {
+  client: Client | null
+  service: Service | null
+}
 
 export default async function AdminDashboard() {
   const supabase = await createClient()
@@ -23,8 +29,8 @@ export default async function AdminDashboard() {
     { count: weekCount },
     { count: totalClients },
     { count: pendingCount },
-    { data: pendingAppointments },
-    { data: upcomingAppointments },
+    { data: pendingData },
+    { data: upcomingData },
   ] = await Promise.all([
     supabase
       .from('appointments')
@@ -45,26 +51,21 @@ export default async function AdminDashboard() {
       .eq('status', 'pending'),
     supabase
       .from('appointments')
-      .select(`
-        *,
-        client:clients(*),
-        service:services(*)
-      `)
+      .select(`*, client:clients(*), service:services(*)`)
       .eq('status', 'pending')
       .order('created_at', { ascending: true })
       .limit(10),
     supabase
       .from('appointments')
-      .select(`
-        *,
-        client:clients(*),
-        service:services(*)
-      `)
+      .select(`*, client:clients(*), service:services(*)`)
       .gte('start_datetime', now.toISOString())
       .eq('status', 'confirmed')
       .order('start_datetime', { ascending: true })
       .limit(5),
   ])
+
+  const pendingAppointments = (pendingData || []) as AppointmentWithRelations[]
+  const upcomingAppointments = (upcomingData || []) as AppointmentWithRelations[]
 
   const stats = [
     { label: 'Pending Requests', value: pendingCount || 0, highlight: (pendingCount || 0) > 0 },
