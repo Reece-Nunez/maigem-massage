@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { z } from 'zod'
+import type { Database } from '@/types/database'
+
+type AppointmentUpdate = Database['public']['Tables']['appointments']['Update']
 
 const updateSchema = z.object({
   status: z.enum(['pending', 'confirmed', 'cancelled', 'completed', 'no_show']).optional(),
@@ -47,7 +50,7 @@ export async function PATCH(
     const adminSupabase = createAdminClient()
     const { data: appointment, error } = await adminSupabase
       .from('appointments')
-      .update(validationResult.data)
+      .update(validationResult.data as AppointmentUpdate)
       .eq('id', id)
       .select()
       .single()
