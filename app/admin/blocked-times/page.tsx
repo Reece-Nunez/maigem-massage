@@ -4,6 +4,7 @@ import { format } from 'date-fns'
 import { toZonedTime } from 'date-fns-tz'
 import { BlockedTimeForm } from './blocked-time-form'
 import { DeleteBlockedTime } from './delete-blocked-time'
+import type { BlockedTime } from '@/types/database'
 
 const BUSINESS_TIMEZONE = 'America/Chicago'
 
@@ -11,11 +12,13 @@ export default async function BlockedTimesPage() {
   const supabase = await createClient()
   const now = new Date()
 
-  const { data: blockedTimes } = await supabase
+  const { data: blockedTimesData } = await supabase
     .from('blocked_times')
     .select('*')
     .gte('end_datetime', now.toISOString())
     .order('start_datetime', { ascending: true })
+
+  const blockedTimes = (blockedTimesData || []) as BlockedTime[]
 
   return (
     <div>
@@ -35,7 +38,7 @@ export default async function BlockedTimesPage() {
         <Card className="p-6">
           <h2 className="text-xl font-bold text-foreground mb-6">Upcoming Blocked Times</h2>
 
-          {blockedTimes && blockedTimes.length > 0 ? (
+          {blockedTimes.length > 0 ? (
             <div className="space-y-4">
               {blockedTimes.map((block) => {
                 const startDate = toZonedTime(

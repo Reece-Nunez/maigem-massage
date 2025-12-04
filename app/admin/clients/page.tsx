@@ -2,17 +2,21 @@ import { createClient } from '@/lib/supabase/server'
 import { Card } from '@/components/ui/card'
 import { format } from 'date-fns'
 import Link from 'next/link'
+import type { Client } from '@/types/database'
+
+type ClientWithCount = Client & {
+  appointments: { count: number }[]
+}
 
 export default async function ClientsPage() {
   const supabase = await createClient()
 
-  const { data: clients } = await supabase
+  const { data: clientsData } = await supabase
     .from('clients')
-    .select(`
-      *,
-      appointments:appointments(count)
-    `)
+    .select(`*, appointments:appointments(count)`)
     .order('created_at', { ascending: false })
+
+  const clients = (clientsData || []) as ClientWithCount[]
 
   return (
     <div>
@@ -22,7 +26,7 @@ export default async function ClientsPage() {
       </p>
 
       <Card className="overflow-hidden">
-        {clients && clients.length > 0 ? (
+        {clients.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead className="bg-secondary/20">
@@ -79,7 +83,7 @@ export default async function ClientsPage() {
                     </td>
                     <td className="px-6 py-4">
                       <span className="px-2 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium">
-                        {(client.appointments as { count: number }[])?.[0]?.count || 0}
+                        {client.appointments?.[0]?.count || 0}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-text-muted text-sm">
