@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { Card } from '@/components/ui/card'
 import { AvailabilityEditor } from './availability-editor'
+import type { Availability } from '@/types/database'
 
 const DAYS_OF_WEEK = [
   { value: 0, label: 'Sunday' },
@@ -15,14 +16,16 @@ const DAYS_OF_WEEK = [
 export default async function AvailabilityPage() {
   const supabase = await createClient()
 
-  const { data: availability } = await supabase
+  const { data: availabilityData } = await supabase
     .from('availability')
     .select('*')
     .order('day_of_week')
 
+  const availability = (availabilityData || []) as Availability[]
+
   // Create a map of availability by day
   const availabilityByDay = DAYS_OF_WEEK.map((day) => {
-    const dayAvailability = availability?.find((a) => a.day_of_week === day.value)
+    const dayAvailability = availability.find((a) => a.day_of_week === day.value)
     // Strip seconds from time if present (database returns HH:mm:ss, we need HH:mm)
     const startTime = dayAvailability?.start_time?.slice(0, 5) ?? '09:00'
     const endTime = dayAvailability?.end_time?.slice(0, 5) ?? '17:00'
