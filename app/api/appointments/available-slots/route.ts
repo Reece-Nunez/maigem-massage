@@ -33,9 +33,15 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Service not found' }, { status: 404 })
     }
 
-    // Parse the date and get day of week
-    const requestedDate = parseISO(dateStr)
-    const zonedDate = toZonedTime(requestedDate, BUSINESS_TIMEZONE)
+    // Parse the date string and create a date at noon in the business timezone
+    // This avoids timezone issues where midnight UTC becomes the previous day in Chicago
+    const [year, month, day] = dateStr.split('-').map(Number)
+    // Create a date object representing noon on the requested date in the business timezone
+    const noonInBusinessTz = fromZonedTime(
+      new Date(year, month - 1, day, 12, 0, 0),
+      BUSINESS_TIMEZONE
+    )
+    const zonedDate = toZonedTime(noonInBusinessTz, BUSINESS_TIMEZONE)
     const dayOfWeek = zonedDate.getDay()
 
     // Get availability for this day of week
