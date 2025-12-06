@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation'
 import Image from 'next/image'
 import { createClient } from '@/lib/supabase/client'
 import { useRouter } from 'next/navigation'
+import { useState, useEffect } from 'react'
 
 const navItems = [
   { href: '/admin', label: 'Dashboard', icon: DashboardIcon },
@@ -18,6 +19,24 @@ const navItems = [
 export function AdminSidebar() {
   const pathname = usePathname()
   const router = useRouter()
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+
+  // Close mobile menu on route change
+  useEffect(() => {
+    setMobileMenuOpen(false)
+  }, [pathname])
+
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (mobileMenuOpen) {
+      document.body.style.overflow = 'hidden'
+    } else {
+      document.body.style.overflow = 'unset'
+    }
+    return () => {
+      document.body.style.overflow = 'unset'
+    }
+  }, [mobileMenuOpen])
 
   const handleLogout = async () => {
     const supabase = createClient()
@@ -26,24 +45,8 @@ export function AdminSidebar() {
     router.refresh()
   }
 
-  return (
-    <aside className="w-64 bg-white border-r border-secondary/30 min-h-screen flex flex-col">
-      <div className="p-2 border-b border-secondary/30">
-        <Link href="/" className="flex items-center gap-3">
-          <Image
-            src="/maigem-logo.png"
-            alt="MaiGem Massage"
-            width={40}
-            height={40}
-            className="h-24 w-24 rounded-full"
-          />
-          <div>
-            <h1 className="text-md font-bold text-foreground">MaiGem Massage</h1>
-            <p className="text-sm text-text-muted">Admin Panel</p>
-          </div>
-        </Link>
-      </div>
-
+  const NavContent = ({ onItemClick }: { onItemClick?: () => void }) => (
+    <>
       <nav className="flex-1 p-4">
         <ul className="space-y-1">
           {navItems.map((item) => {
@@ -55,7 +58,8 @@ export function AdminSidebar() {
               <li key={item.href}>
                 <Link
                   href={item.href}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors ${
+                  onClick={onItemClick}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg transition-colors min-h-[48px] ${
                     isActive
                       ? 'bg-primary text-white'
                       : 'text-foreground hover:bg-secondary/30'
@@ -72,14 +76,92 @@ export function AdminSidebar() {
 
       <div className="p-4 border-t border-secondary/30">
         <button
-          onClick={handleLogout}
-          className="flex items-center gap-3 px-4 py-3 rounded-lg text-foreground hover:bg-secondary/30 transition-colors w-full"
+          onClick={() => {
+            onItemClick?.()
+            handleLogout()
+          }}
+          className="flex items-center gap-3 px-4 py-3 rounded-lg text-foreground hover:bg-secondary/30 transition-colors w-full min-h-[48px]"
         >
           <LogoutIcon className="w-5 h-5" />
           <span>Sign Out</span>
         </button>
       </div>
-    </aside>
+    </>
+  )
+
+  return (
+    <>
+      {/* Mobile Header */}
+      <div className="lg:hidden fixed top-0 left-0 right-0 z-50 bg-white border-b border-secondary/30">
+        <div className="flex items-center justify-between p-3">
+          <Link href="/" className="flex items-center gap-2">
+            <Image
+              src="/maigem-logo.png"
+              alt="MaiGem Massage"
+              width={40}
+              height={40}
+              className="h-10 w-10 rounded-full"
+            />
+            <div>
+              <h1 className="text-sm font-bold text-foreground">MaiGem Massage</h1>
+              <p className="text-xs text-text-muted">Admin Panel</p>
+            </div>
+          </Link>
+          <button
+            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            className="p-2 text-foreground hover:bg-secondary/30 rounded-lg transition-colors min-h-[44px] min-w-[44px] flex items-center justify-center"
+            aria-label="Toggle menu"
+          >
+            {mobileMenuOpen ? (
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            ) : (
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+              </svg>
+            )}
+          </button>
+        </div>
+      </div>
+
+      {/* Mobile Menu Overlay */}
+      {mobileMenuOpen && (
+        <div
+          className="lg:hidden fixed inset-0 bg-black/50 z-40"
+          onClick={() => setMobileMenuOpen(false)}
+        />
+      )}
+
+      {/* Mobile Sidebar Drawer */}
+      <aside
+        className={`lg:hidden fixed top-[64px] left-0 bottom-0 w-64 bg-white z-50 transform transition-transform duration-300 ease-in-out flex flex-col ${
+          mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
+        }`}
+      >
+        <NavContent onItemClick={() => setMobileMenuOpen(false)} />
+      </aside>
+
+      {/* Desktop Sidebar */}
+      <aside className="hidden lg:flex w-64 bg-white border-r border-secondary/30 min-h-screen flex-col">
+        <div className="p-2 border-b border-secondary/30">
+          <Link href="/" className="flex items-center gap-3">
+            <Image
+              src="/maigem-logo.png"
+              alt="MaiGem Massage"
+              width={40}
+              height={40}
+              className="h-24 w-24 rounded-full"
+            />
+            <div>
+              <h1 className="text-md font-bold text-foreground">MaiGem Massage</h1>
+              <p className="text-sm text-text-muted">Admin Panel</p>
+            </div>
+          </Link>
+        </div>
+        <NavContent />
+      </aside>
+    </>
   )
 }
 

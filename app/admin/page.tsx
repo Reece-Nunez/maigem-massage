@@ -76,14 +76,14 @@ export default async function AdminDashboard() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-foreground mb-8">Dashboard</h1>
+      <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-6 sm:mb-8">Dashboard</h1>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-2 gap-3 sm:gap-6 mb-6 sm:mb-8">
         {stats.map((stat) => (
-          <Card key={stat.label} className={`p-6 ${stat.highlight ? 'border-2 border-yellow-500 bg-yellow-50' : ''}`}>
-            <p className="text-text-muted text-sm">{stat.label}</p>
-            <p className={`text-4xl font-bold mt-2 ${stat.highlight ? 'text-yellow-600' : 'text-primary'}`}>
+          <Card key={stat.label} className={`p-3 sm:p-6 ${stat.highlight ? 'border-2 border-yellow-500 bg-yellow-50' : ''}`}>
+            <p className="text-text-muted text-xs sm:text-sm">{stat.label}</p>
+            <p className={`text-2xl sm:text-4xl font-bold mt-1 sm:mt-2 ${stat.highlight ? 'text-yellow-600' : 'text-primary'}`}>
               {stat.value}
             </p>
           </Card>
@@ -92,13 +92,13 @@ export default async function AdminDashboard() {
 
       {/* Pending Appointments - Show prominently if any */}
       {pendingAppointments && pendingAppointments.length > 0 && (
-        <Card className="p-6 mb-8 border-2 border-yellow-500 bg-yellow-50">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">⏳</span>
-              <h2 className="text-xl font-bold text-foreground">Pending Approval</h2>
-              <span className="px-2 py-1 bg-yellow-500 text-white text-sm rounded-full">
-                {pendingAppointments.length} request{pendingAppointments.length !== 1 ? 's' : ''}
+        <Card className="p-4 sm:p-6 mb-6 sm:mb-8 border-2 border-yellow-500 bg-yellow-50">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0 mb-4 sm:mb-6">
+            <div className="flex items-center gap-2 sm:gap-3">
+              <span className="text-xl sm:text-2xl">⏳</span>
+              <h2 className="text-lg sm:text-xl font-bold text-foreground">Pending</h2>
+              <span className="px-2 py-0.5 sm:py-1 bg-yellow-500 text-white text-xs sm:text-sm rounded-full">
+                {pendingAppointments.length}
               </span>
             </div>
             <Link
@@ -109,7 +109,7 @@ export default async function AdminDashboard() {
             </Link>
           </div>
 
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {pendingAppointments.map((appointment) => {
               const startDate = toZonedTime(
                 new Date(appointment.start_datetime),
@@ -119,29 +119,31 @@ export default async function AdminDashboard() {
               return (
                 <div
                   key={appointment.id}
-                  className="flex items-center justify-between p-4 bg-white rounded-lg shadow-sm"
+                  className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 p-3 sm:p-4 bg-white rounded-lg shadow-sm"
                 >
-                  <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-full bg-yellow-500 flex items-center justify-center text-white font-bold">
+                  <div className="flex items-center gap-3 sm:gap-4">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-yellow-500 flex items-center justify-center text-white font-bold text-sm sm:text-base flex-shrink-0">
                       {appointment.client?.first_name?.[0]}
                       {appointment.client?.last_name?.[0]}
                     </div>
-                    <div>
-                      <p className="font-semibold text-foreground">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-foreground text-sm sm:text-base truncate">
                         {appointment.client?.first_name} {appointment.client?.last_name}
                       </p>
-                      <p className="text-sm text-text-muted">
-                        {appointment.service?.name} • {format(startDate, 'EEE, MMM d')} at {format(startDate, 'h:mm a')}
+                      <p className="text-xs sm:text-sm text-text-muted">
+                        {appointment.service?.name} • {format(startDate, 'MMM d')} at {format(startDate, 'h:mm a')}
                       </p>
-                      <p className="text-xs text-text-muted">
-                        {appointment.client?.email} • {appointment.client?.phone}
+                      <p className="text-xs text-text-muted truncate hidden sm:block">
+                        {appointment.client?.email}
                       </p>
                     </div>
                   </div>
-                  <PendingAppointmentActions
-                    appointmentId={appointment.id}
-                    token={appointment.cancellation_token}
-                  />
+                  <div className="flex justify-end sm:flex-shrink-0">
+                    <PendingAppointmentActions
+                      appointmentId={appointment.id}
+                      token={appointment.cancellation_token}
+                    />
+                  </div>
                 </div>
               )
             })}
@@ -150,9 +152,9 @@ export default async function AdminDashboard() {
       )}
 
       {/* Upcoming Confirmed Appointments */}
-      <Card className="p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-foreground">Upcoming Confirmed</h2>
+      <Card className="p-4 sm:p-6">
+        <div className="flex items-center justify-between mb-4 sm:mb-6">
+          <h2 className="text-lg sm:text-xl font-bold text-foreground">Upcoming</h2>
           <Link
             href="/admin/appointments"
             className="text-primary hover:underline text-sm"
@@ -162,7 +164,7 @@ export default async function AdminDashboard() {
         </div>
 
         {upcomingAppointments && upcomingAppointments.length > 0 ? (
-          <div className="space-y-4">
+          <div className="space-y-3 sm:space-y-4">
             {upcomingAppointments.map((appointment) => {
               const startDate = toZonedTime(
                 new Date(appointment.start_datetime),
@@ -175,31 +177,31 @@ export default async function AdminDashboard() {
               return (
                 <div
                   key={appointment.id}
-                  className="flex items-center justify-between p-4 bg-secondary/20 rounded-lg"
+                  className="flex items-center justify-between gap-3 p-3 sm:p-4 bg-secondary/20 rounded-lg"
                 >
-                  <div className="flex items-center gap-4">
+                  <div className="flex items-center gap-3 sm:gap-4 min-w-0">
                     <div
-                      className={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold ${
+                      className={`w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-white font-bold text-sm sm:text-base flex-shrink-0 ${
                         isToday ? 'bg-primary' : 'bg-secondary'
                       }`}
                     >
                       {appointment.client?.first_name?.[0]}
                       {appointment.client?.last_name?.[0]}
                     </div>
-                    <div>
-                      <p className="font-semibold text-foreground">
+                    <div className="min-w-0">
+                      <p className="font-semibold text-foreground text-sm sm:text-base truncate">
                         {appointment.client?.first_name} {appointment.client?.last_name}
                       </p>
-                      <p className="text-sm text-text-muted">
+                      <p className="text-xs sm:text-sm text-text-muted truncate">
                         {appointment.service?.name}
                       </p>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <p className="font-semibold text-foreground">
-                      {isToday ? 'Today' : format(startDate, 'EEE, MMM d')}
+                  <div className="text-right flex-shrink-0">
+                    <p className="font-semibold text-foreground text-sm sm:text-base">
+                      {isToday ? 'Today' : format(startDate, 'MMM d')}
                     </p>
-                    <p className="text-sm text-text-muted">
+                    <p className="text-xs sm:text-sm text-text-muted">
                       {format(startDate, 'h:mm a')}
                     </p>
                   </div>
@@ -208,47 +210,36 @@ export default async function AdminDashboard() {
             })}
           </div>
         ) : (
-          <p className="text-text-muted text-center py-8">
+          <p className="text-text-muted text-center py-6 sm:py-8 text-sm sm:text-base">
             No upcoming confirmed appointments
           </p>
         )}
       </Card>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
-        <Card className="p-6">
-          <h3 className="font-bold text-foreground mb-4">Quick Actions</h3>
-          <div className="space-y-3">
+      <div className="grid grid-cols-1 gap-4 sm:gap-6 mt-6 sm:mt-8">
+        <Card className="p-4 sm:p-6">
+          <h3 className="font-bold text-foreground mb-3 sm:mb-4 text-sm sm:text-base">Quick Actions</h3>
+          <div className="grid grid-cols-2 gap-3">
             <Link
               href="/admin/blocked-times"
               className="block p-3 bg-secondary/20 rounded-lg hover:bg-secondary/40 transition-colors"
             >
-              <p className="font-medium text-foreground">Block Time Off</p>
-              <p className="text-sm text-text-muted">
-                Mark days or times as unavailable
+              <p className="font-medium text-foreground text-sm">Block Time Off</p>
+              <p className="text-xs text-text-muted hidden sm:block">
+                Mark times as unavailable
               </p>
             </Link>
             <Link
               href="/admin/availability"
               className="block p-3 bg-secondary/20 rounded-lg hover:bg-secondary/40 transition-colors"
             >
-              <p className="font-medium text-foreground">Update Hours</p>
-              <p className="text-sm text-text-muted">
-                Change your regular availability
+              <p className="font-medium text-foreground text-sm">Update Hours</p>
+              <p className="text-xs text-text-muted hidden sm:block">
+                Change your availability
               </p>
             </Link>
           </div>
-        </Card>
-
-        <Card className="p-6">
-          <h3 className="font-bold text-foreground mb-4">How Bookings Work</h3>
-          <ol className="text-sm text-text-muted space-y-2 list-decimal list-inside">
-            <li>Client submits a booking request</li>
-            <li>You receive an email with Accept/Reject buttons</li>
-            <li>Pending requests appear here on your dashboard</li>
-            <li>Accept or reject from email or dashboard</li>
-            <li>Client receives confirmation or notification</li>
-          </ol>
         </Card>
       </div>
     </div>

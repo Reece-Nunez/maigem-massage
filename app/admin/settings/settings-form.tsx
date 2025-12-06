@@ -101,15 +101,15 @@ export function SettingsForm({ initialSettings }: SettingsFormProps) {
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6 sm:space-y-8">
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-3 sm:px-4 py-2 sm:py-3 rounded-lg text-sm">
           {error}
         </div>
       )}
 
-      <div className="space-y-6">
-        <h2 className="text-xl font-semibold text-foreground border-b border-secondary/30 pb-2">
+      <div className="space-y-4 sm:space-y-6">
+        <h2 className="text-lg sm:text-xl font-semibold text-foreground border-b border-secondary/30 pb-2">
           Business Information
         </h2>
 
@@ -120,14 +120,14 @@ export function SettingsForm({ initialSettings }: SettingsFormProps) {
           const displayValue = parseValue(setting.value)
 
           return (
-            <div key={key} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+            <div key={key} className="space-y-2">
               <div>
                 <label className="block text-sm font-medium text-foreground">
                   {config.label}
                 </label>
-                <p className="text-sm text-text-muted">{config.description}</p>
+                <p className="text-xs sm:text-sm text-text-muted">{config.description}</p>
               </div>
-              <div className="md:col-span-2 flex gap-2">
+              <div className="flex gap-2">
                 <Input
                   type={config.type}
                   value={displayValue}
@@ -138,8 +138,10 @@ export function SettingsForm({ initialSettings }: SettingsFormProps) {
                   onClick={() => handleSave(key, parseValue(settings.find(s => s.key === key)?.value || ''))}
                   disabled={saving === key}
                   variant={saved === key ? 'secondary' : 'primary'}
+                  size="sm"
+                  className="flex-shrink-0 px-3 sm:px-4"
                 >
-                  {saving === key ? 'Saving...' : saved === key ? 'Saved!' : 'Save'}
+                  {saving === key ? '...' : saved === key ? 'Saved' : 'Save'}
                 </Button>
               </div>
             </div>
@@ -147,8 +149,8 @@ export function SettingsForm({ initialSettings }: SettingsFormProps) {
         })}
       </div>
 
-      <div className="space-y-6">
-        <h2 className="text-xl font-semibold text-foreground border-b border-secondary/30 pb-2">
+      <div className="space-y-4 sm:space-y-6">
+        <h2 className="text-lg sm:text-xl font-semibold text-foreground border-b border-secondary/30 pb-2">
           Booking Settings
         </h2>
 
@@ -159,14 +161,14 @@ export function SettingsForm({ initialSettings }: SettingsFormProps) {
           const displayValue = parseValue(setting.value)
 
           return (
-            <div key={key} className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
+            <div key={key} className="space-y-2">
               <div>
                 <label className="block text-sm font-medium text-foreground">
                   {config.label}
                 </label>
-                <p className="text-sm text-text-muted">{config.description}</p>
+                <p className="text-xs sm:text-sm text-text-muted">{config.description}</p>
               </div>
-              <div className="md:col-span-2 flex gap-2">
+              <div className="flex gap-2">
                 <Input
                   type={config.type}
                   value={displayValue}
@@ -178,8 +180,10 @@ export function SettingsForm({ initialSettings }: SettingsFormProps) {
                   onClick={() => handleSave(key, parseValue(settings.find(s => s.key === key)?.value || ''))}
                   disabled={saving === key}
                   variant={saved === key ? 'secondary' : 'primary'}
+                  size="sm"
+                  className="flex-shrink-0 px-3 sm:px-4"
                 >
-                  {saving === key ? 'Saving...' : saved === key ? 'Saved!' : 'Save'}
+                  {saving === key ? '...' : saved === key ? 'Saved' : 'Save'}
                 </Button>
               </div>
             </div>

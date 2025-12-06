@@ -19,12 +19,12 @@ export default async function SettingsPage() {
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-foreground mb-2">Settings</h1>
-      <p className="text-text-muted mb-8">
+      <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-1 sm:mb-2">Settings</h1>
+      <p className="text-text-muted mb-6 sm:mb-8 text-sm sm:text-base">
         Configure your business information and booking preferences.
       </p>
 
-      <Card className="p-6">
+      <Card className="p-4 sm:p-6">
         <SettingsForm initialSettings={formattedSettings} />
       </Card>
     </div>

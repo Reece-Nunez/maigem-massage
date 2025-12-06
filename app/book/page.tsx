@@ -157,29 +157,29 @@ export default function BookingPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
-      <header className="bg-white border-b border-secondary/50">
-        <nav className="max-w-4xl mx-auto px-6 py-4 flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-3">
+      <header className="bg-white border-b border-secondary/50 sticky top-0 z-10">
+        <nav className="max-w-4xl mx-auto px-4 sm:px-6 py-3 sm:py-4 flex items-center justify-between">
+          <Link href="/" className="flex items-center gap-2 sm:gap-3">
             <Image
               src="/maigem-logo.png"
               alt="MaiGem Massage"
               width={40}
               height={40}
-              className="rounded-full"
+              className="rounded-full w-8 h-8 sm:w-10 sm:h-10"
             />
-            <span className="text-xl font-semibold text-foreground">MaiGem Massage</span>
+            <span className="text-lg sm:text-xl font-semibold text-foreground">MaiGem Massage</span>
           </Link>
         </nav>
       </header>
 
-      <main className="max-w-4xl mx-auto px-6 py-12">
+      <main className="max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-12">
         {/* Progress Steps */}
-        <div className="mb-12">
-          <div className="flex items-center justify-center gap-2 mb-4">
+        <div className="mb-6 sm:mb-12">
+          <div className="flex items-center justify-center gap-1 sm:gap-2 mb-3 sm:mb-4">
             {steps.map((s, i) => (
               <div key={s} className="flex items-center">
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
+                  className={`w-7 h-7 sm:w-8 sm:h-8 rounded-full flex items-center justify-center text-xs sm:text-sm font-medium ${
                     i <= currentStepIndex
                       ? 'bg-primary text-white'
                       : 'bg-secondary/50 text-text-muted'
@@ -189,7 +189,7 @@ export default function BookingPage() {
                 </div>
                 {i < steps.length - 1 && (
                   <div
-                    className={`w-12 h-1 mx-2 ${
+                    className={`w-6 sm:w-12 h-1 mx-1 sm:mx-2 ${
                       i < currentStepIndex ? 'bg-primary' : 'bg-secondary/50'
                     }`}
                   />
@@ -197,7 +197,7 @@ export default function BookingPage() {
               </div>
             ))}
           </div>
-          <p className="text-center text-text-muted">
+          <p className="text-center text-text-muted text-sm sm:text-base">
             {step === 'service' && 'Choose your service'}
             {step === 'datetime' && 'Select date & time'}
             {step === 'contact' && 'Your information'}
@@ -206,25 +206,25 @@ export default function BookingPage() {
         </div>
 
         {/* Step Content */}
-        <div className="space-y-8">
+        <div className="space-y-6 sm:space-y-8">
           {/* Step 1: Service Selection */}
           {step === 'service' && (
-            <div className="grid md:grid-cols-2 gap-6">
+            <div className="grid gap-4 sm:gap-6 sm:grid-cols-2">
               {services.map((service) => (
                 <Card
                   key={service.id}
                   onClick={() => setSelectedService(service)}
                   selected={selectedService?.id === service.id}
-                  className="p-6"
+                  className="p-4 sm:p-6"
                 >
-                  <div className="flex justify-between items-start mb-3">
-                    <h3 className="text-xl font-semibold text-foreground">{service.name}</h3>
-                    <div className="text-right">
-                      <span className="text-sm text-text-muted">{service.duration_minutes} min</span>
-                      <p className="text-lg font-semibold text-primary">{service.price_display}</p>
+                  <div className="flex justify-between items-start mb-2 sm:mb-3">
+                    <h3 className="text-lg sm:text-xl font-semibold text-foreground pr-2">{service.name}</h3>
+                    <div className="text-right flex-shrink-0">
+                      <span className="text-xs sm:text-sm text-text-muted">{service.duration_minutes} min</span>
+                      <p className="text-base sm:text-lg font-semibold text-primary">{service.price_display}</p>
                     </div>
                   </div>
-                  <p className="text-text-muted text-sm">{service.description}</p>
+                  <p className="text-text-muted text-xs sm:text-sm">{service.description}</p>
                 </Card>
               ))}
             </div>
@@ -232,26 +232,26 @@ export default function BookingPage() {
 
           {/* Step 2: Date & Time Selection */}
           {step === 'datetime' && (
-            <div className="space-y-8">
+            <div className="space-y-6 sm:space-y-8">
               {/* Date Selection */}
               <div>
-                <h3 className="text-lg font-semibold text-foreground mb-4">Select a Date</h3>
-                <div className="flex gap-3 overflow-x-auto pb-4">
+                <h3 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4">Select a Date</h3>
+                <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
                   {availableDates.slice(0, 14).map((date) => {
                     const isSelected = selectedDate && format(date, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd')
                     return (
                       <button
                         key={date.toISOString()}
                         onClick={() => setSelectedDate(date)}
-                        className={`flex-shrink-0 px-4 py-3 rounded-xl border-2 transition-colors ${
+                        className={`flex-shrink-0 px-3 sm:px-4 py-2 sm:py-3 rounded-xl border-2 transition-colors min-w-[60px] sm:min-w-[70px] ${
                           isSelected
                             ? 'border-primary bg-primary/10'
                             : 'border-secondary/50 hover:border-primary/50'
                         }`}
                       >
-                        <p className="text-sm text-text-muted">{format(date, 'EEE')}</p>
-                        <p className="text-lg font-semibold">{format(date, 'd')}</p>
-                        <p className="text-sm text-text-muted">{format(date, 'MMM')}</p>
+                        <p className="text-xs sm:text-sm text-text-muted">{format(date, 'EEE')}</p>
+                        <p className="text-base sm:text-lg font-semibold">{format(date, 'd')}</p>
+                        <p className="text-xs sm:text-sm text-text-muted">{format(date, 'MMM')}</p>
                       </button>
                     )
                   })}
@@ -261,15 +261,15 @@ export default function BookingPage() {
               {/* Time Selection */}
               {selectedDate && (
                 <div>
-                  <h3 className="text-lg font-semibold text-foreground mb-4">Select a Time</h3>
+                  <h3 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4">Select a Time</h3>
                   {slotsLoading ? (
-                    <div className="text-center py-8 text-text-muted">Loading available times...</div>
+                    <div className="text-center py-6 sm:py-8 text-text-muted text-sm sm:text-base">Loading available times...</div>
                   ) : availableSlots.filter(s => s.available).length === 0 ? (
-                    <div className="text-center py-8 text-text-muted">
+                    <div className="text-center py-6 sm:py-8 text-text-muted text-sm sm:text-base">
                       No available times for this date. Please select another date.
                     </div>
                   ) : (
-                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-3">
+                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2 sm:gap-3">
                       {availableSlots
                         .filter((slot) => slot.available)
                         .map((slot) => {
@@ -278,7 +278,7 @@ export default function BookingPage() {
                             <button
                               key={slot.time}
                               onClick={() => setSelectedTime(slot.time)}
-                              className={`px-4 py-3 rounded-xl border-2 transition-colors ${
+                              className={`px-2 sm:px-4 py-3 rounded-xl border-2 transition-colors text-sm sm:text-base min-h-[48px] ${
                                 isSelected
                                   ? 'border-primary bg-primary text-white'
                                   : 'border-secondary/50 hover:border-primary/50'
@@ -297,8 +297,8 @@ export default function BookingPage() {
 
           {/* Step 3: Contact Information */}
           {step === 'contact' && (
-            <div className="max-w-md mx-auto space-y-6">
-              <div className="grid grid-cols-2 gap-4">
+            <div className="max-w-md mx-auto space-y-4 sm:space-y-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Input
                   label="First Name"
                   value={clientInfo.first_name}
@@ -334,7 +334,7 @@ export default function BookingPage() {
                 <textarea
                   value={clientInfo.notes}
                   onChange={(e) => setClientInfo({ ...clientInfo, notes: e.target.value })}
-                  className="w-full px-4 py-3 rounded-xl border border-secondary/50 bg-white text-foreground placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary"
+                  className="w-full px-4 py-3 rounded-xl border border-secondary/50 bg-white text-foreground placeholder:text-text-muted focus:outline-none focus:ring-2 focus:ring-primary/50 focus:border-primary text-base min-h-[100px]"
                   rows={3}
                   placeholder="Any special requests or areas of focus..."
                 />
@@ -345,27 +345,27 @@ export default function BookingPage() {
           {/* Step 4: Confirmation */}
           {step === 'confirm' && selectedService && selectedDate && selectedTime && (
             <div className="max-w-md mx-auto">
-              <Card className="p-6">
-                <h3 className="text-xl font-semibold text-foreground mb-6">Booking Summary</h3>
+              <Card className="p-4 sm:p-6">
+                <h3 className="text-lg sm:text-xl font-semibold text-foreground mb-4 sm:mb-6">Booking Summary</h3>
 
-                <div className="space-y-4">
-                  <div className="flex justify-between">
+                <div className="space-y-3 sm:space-y-4 text-sm sm:text-base">
+                  <div className="flex justify-between gap-2">
                     <span className="text-text-muted">Service</span>
-                    <span className="font-medium">{selectedService.name}</span>
+                    <span className="font-medium text-right">{selectedService.name}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between gap-2">
                     <span className="text-text-muted">Duration</span>
-                    <span className="font-medium">{selectedService.duration_minutes} minutes</span>
+                    <span className="font-medium">{selectedService.duration_minutes} min</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between gap-2">
                     <span className="text-text-muted">Date</span>
-                    <span className="font-medium">{format(selectedDate, 'EEEE, MMMM d, yyyy')}</span>
+                    <span className="font-medium text-right">{format(selectedDate, 'EEE, MMM d, yyyy')}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between gap-2">
                     <span className="text-text-muted">Time</span>
                     <span className="font-medium">{formatTimeSlot(selectedTime)}</span>
                   </div>
-                  <div className="flex justify-between">
+                  <div className="flex justify-between gap-2">
                     <span className="text-text-muted">Price</span>
                     <span className="font-medium text-primary">{selectedService.price_display}</span>
                   </div>
@@ -373,29 +373,29 @@ export default function BookingPage() {
                   <hr className="border-secondary/50" />
 
                   <div>
-                    <span className="text-text-muted text-sm">Contact</span>
+                    <span className="text-text-muted text-xs sm:text-sm">Contact</span>
                     <p className="font-medium">{clientInfo.first_name} {clientInfo.last_name}</p>
-                    <p className="text-sm text-text-muted">{clientInfo.email}</p>
-                    <p className="text-sm text-text-muted">{clientInfo.phone}</p>
+                    <p className="text-xs sm:text-sm text-text-muted break-all">{clientInfo.email}</p>
+                    <p className="text-xs sm:text-sm text-text-muted">{clientInfo.phone}</p>
                   </div>
 
                   {clientInfo.notes && (
                     <div>
-                      <span className="text-text-muted text-sm">Notes</span>
-                      <p className="text-sm">{clientInfo.notes}</p>
+                      <span className="text-text-muted text-xs sm:text-sm">Notes</span>
+                      <p className="text-xs sm:text-sm">{clientInfo.notes}</p>
                     </div>
                   )}
                 </div>
 
-                <div className="mt-6 p-4 bg-secondary/20 rounded-xl">
-                  <p className="text-sm text-text-muted">
+                <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-secondary/20 rounded-xl">
+                  <p className="text-xs sm:text-sm text-text-muted">
                     <strong>Payment:</strong> Payment is collected at your appointment.
                     We accept cash, card, and Venmo (@lenaecrys).
                   </p>
                 </div>
 
                 {error && (
-                  <div className="mt-4 p-4 bg-red-50 text-red-600 rounded-xl text-sm">
+                  <div className="mt-4 p-3 sm:p-4 bg-red-50 text-red-600 rounded-xl text-xs sm:text-sm">
                     {error}
                   </div>
                 )}
@@ -405,10 +405,11 @@ export default function BookingPage() {
         </div>
 
         {/* Navigation Buttons */}
-        <div className="mt-12 flex justify-between">
+        <div className="mt-8 sm:mt-12 flex justify-between gap-4">
           <Button
             variant="ghost"
             onClick={step === 'service' ? () => router.push('/') : prevStep}
+            className="min-h-[48px] px-4 sm:px-6"
           >
             {step === 'service' ? 'Cancel' : 'Back'}
           </Button>
@@ -418,11 +419,12 @@ export default function BookingPage() {
               onClick={handleSubmit}
               disabled={!canProceed() || loading}
               loading={loading}
+              className="min-h-[48px] px-4 sm:px-6"
             >
               Confirm Booking
             </Button>
           ) : (
-            <Button onClick={nextStep} disabled={!canProceed()}>
+            <Button onClick={nextStep} disabled={!canProceed()} className="min-h-[48px] px-4 sm:px-6">
               Continue
             </Button>
           )}
