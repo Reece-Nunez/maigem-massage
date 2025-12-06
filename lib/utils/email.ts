@@ -1,10 +1,41 @@
 import { Resend } from 'resend'
 import { format } from 'date-fns'
+import { createAdminClient } from '@/lib/supabase/admin'
 import type { Appointment, Service, Client } from '@/types/database'
 
 const resend = new Resend(process.env.RESEND_API_KEY)
 
-const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'maigemmassage@example.com'
+// Fallback email if database lookup fails
+const FALLBACK_ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'maigemmassage@example.com'
+
+// Fetch the business email from admin_settings
+async function getAdminEmail(): Promise<string> {
+  try {
+    const supabase = createAdminClient()
+    const { data, error } = await supabase
+      .from('admin_settings')
+      .select('value')
+      .eq('key', 'business_email')
+      .single()
+
+    if (error || !data) {
+      console.warn('Could not fetch business_email from settings, using fallback:', FALLBACK_ADMIN_EMAIL)
+      return FALLBACK_ADMIN_EMAIL
+    }
+
+    // The value is stored as JSON string like "\"email@example.com\""
+    let email = data.value as string
+    // Remove surrounding quotes if present
+    if (typeof email === 'string' && email.startsWith('"') && email.endsWith('"')) {
+      email = email.slice(1, -1)
+    }
+
+    return email || FALLBACK_ADMIN_EMAIL
+  } catch (error) {
+    console.error('Error fetching admin email:', error)
+    return FALLBACK_ADMIN_EMAIL
+  }
+}
 
 interface EmailParams {
   appointment: Appointment
@@ -251,9 +282,11 @@ export async function sendAdminNotificationEmail({
   `
 
   try {
+    const adminEmail = await getAdminEmail()
+
     const { data, error } = await resend.emails.send({
       from: 'MaiGem Massage <onboarding@resend.dev>',
-      to: ADMIN_EMAIL,
+      to: adminEmail,
       subject: `New Booking Request - ${client.first_name} ${client.last_name} - ${format(startDate, 'MMM d, h:mm a')}`,
       html,
     })
