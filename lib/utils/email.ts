@@ -6,7 +6,7 @@ import type { Appointment, Service, Client } from '@/types/database'
 const resend = new Resend(process.env.RESEND_API_KEY)
 
 // Fallback email if database lookup fails
-const FALLBACK_ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'maigemmassage@example.com'
+const FALLBACK_ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'crystalwarren67@yahoo.com'
 
 // Fetch the business email from admin_settings
 async function getAdminEmail(): Promise<string> {
