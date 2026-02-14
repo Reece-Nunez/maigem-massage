@@ -190,6 +190,49 @@ export function SettingsForm({ initialSettings }: SettingsFormProps) {
           )
         })}
       </div>
+      <div className="space-y-4 sm:space-y-6">
+        <h2 className="text-lg sm:text-xl font-semibold text-foreground border-b border-secondary/30 pb-2">
+          Square Integration
+        </h2>
+
+        {['square_enabled', 'online_payment_enabled'].map(key => {
+          const setting = settings.find(s => s.key === key)
+          if (!setting) return null
+          const isEnabled = parseValue(setting.value) === 'true'
+          const label = key === 'square_enabled' ? 'Square Sync' : 'Online Payments'
+          const description = key === 'square_enabled'
+            ? 'Sync services, customers, and appointments with Square'
+            : 'Allow clients to pay online during booking via Square'
+
+          return (
+            <div key={key} className="flex items-center justify-between gap-4">
+              <div>
+                <label className="block text-sm font-medium text-foreground">
+                  {label}
+                </label>
+                <p className="text-xs sm:text-sm text-text-muted">{description}</p>
+              </div>
+              <button
+                onClick={() => {
+                  const newValue = isEnabled ? 'false' : 'true'
+                  handleChange(key, newValue)
+                  handleSave(key, newValue)
+                }}
+                disabled={saving === key}
+                className={`relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-primary/50 ${
+                  isEnabled ? 'bg-primary' : 'bg-secondary'
+                }`}
+              >
+                <span
+                  className={`inline-block h-5 w-5 transform rounded-full bg-white shadow transition duration-200 ease-in-out ${
+                    isEnabled ? 'translate-x-5' : 'translate-x-0'
+                  }`}
+                />
+              </button>
+            </div>
+          )
+        })}
+      </div>
     </div>
   )
 }

@@ -163,29 +163,47 @@ function BookingSuccessContent() {
         {/* Payment Info */}
         <Card className="p-4 sm:p-6 mb-6 sm:mb-8 bg-primary/5 border-primary/20">
           <h2 className="text-base sm:text-lg font-semibold text-foreground mb-2">Payment Information</h2>
-          <p className="text-text-muted mb-3 sm:mb-4 text-xs sm:text-sm">
-            Payment is collected at your appointment. We accept:
-          </p>
-          <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
-            <li className="flex items-center gap-2">
-              <svg className="w-4 h-4 text-primary flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              Cash
-            </li>
-            <li className="flex items-center gap-2">
-              <svg className="w-4 h-4 text-primary flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              <span>Credit/Debit Card (Apple Pay, Google Pay)</span>
-            </li>
-            <li className="flex items-center gap-2">
-              <svg className="w-4 h-4 text-primary flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-              </svg>
-              Venmo: <span className="font-medium">@lenaecrys</span>
-            </li>
-          </ul>
+          {appointment.payment_status === 'paid' ? (
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <svg className="w-4 h-4 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+              </div>
+              <div>
+                <p className="font-medium text-green-700 text-sm sm:text-base">Payment Received</p>
+                <p className="text-text-muted text-xs sm:text-sm">
+                  {appointment.service.price_display} paid online via card
+                </p>
+              </div>
+            </div>
+          ) : (
+            <>
+              <p className="text-text-muted mb-3 sm:mb-4 text-xs sm:text-sm">
+                Payment is collected at your appointment. We accept:
+              </p>
+              <ul className="space-y-1.5 sm:space-y-2 text-xs sm:text-sm">
+                <li className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-primary flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  Cash
+                </li>
+                <li className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-primary flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  <span>Credit/Debit Card (Apple Pay, Google Pay)</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <svg className="w-4 h-4 text-primary flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                  </svg>
+                  Venmo: <span className="font-medium">@lenaecrys</span>
+                </li>
+              </ul>
+            </>
+          )}
         </Card>
 
         {/* Contact Info */}

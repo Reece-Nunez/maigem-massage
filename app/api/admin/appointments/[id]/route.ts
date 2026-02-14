@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { z } from 'zod'
 import type { Database } from '@/types/database'
+import { cancelSquareBooking } from '@/lib/square/bookings'
 
 type AppointmentUpdate = Database['public']['Tables']['appointments']['Update']
 
@@ -48,6 +49,24 @@ export async function PATCH(
     }
 
     const adminSupabase = createAdminClient()
+
+    // If cancelling, check for Square booking to cancel
+    if (validationResult.data.status === 'cancelled') {
+      const { data: existing } = await adminSupabase
+        .from('appointments')
+        .select('square_booking_id')
+        .eq('id', id)
+        .single()
+
+      if (existing?.square_booking_id) {
+        try {
+          await cancelSquareBooking(existing.square_booking_id)
+        } catch (err) {
+          console.error('Failed to cancel Square booking:', err)
+        }
+      }
+    }
+
     const { data: appointment, error } = await adminSupabase
       .from('appointments')
       .update(validationResult.data as AppointmentUpdate)

@@ -128,7 +128,16 @@ function getLocationHtml(): string {
   `
 }
 
-function getPaymentHtml(): string {
+function getPaymentHtml(appointment?: Appointment): string {
+  if (appointment?.payment_status === 'paid') {
+    return `
+    <div style="background: #d4edda; color: #155724; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
+      <h2 style="margin: 0 0 12px 0; color: #155724;">Payment Received</h2>
+      <p style="margin: 0;">Your payment has been processed successfully via card. No further payment is needed at your appointment.</p>
+    </div>
+    `
+  }
+
   return `
     <div style="background: #7c9885; color: white; border-radius: 12px; padding: 24px; margin-bottom: 24px;">
       <h2 style="margin: 0 0 12px 0; color: white;">Payment Information</h2>
@@ -356,7 +365,7 @@ export async function sendApprovalEmail({
     </a>
   </div>
 
-  ${getPaymentHtml()}
+  ${getPaymentHtml(appointment)}
   ${getFooterHtml()}
 </body>
 </html>

@@ -5,12 +5,14 @@ import Image from 'next/image'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { format, addDays, parseISO, startOfDay } from 'date-fns'
+import { DayPicker } from 'react-day-picker'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
+import { SquarePayment } from './components/SquarePayment'
 import type { Service } from '@/types/database'
 
-type BookingStep = 'service' | 'datetime' | 'contact' | 'confirm'
+type BookingStep = 'service' | 'datetime' | 'contact' | 'payment' | 'confirm'
 
 interface TimeSlot {
   time: string
@@ -40,12 +42,17 @@ export default function BookingPage() {
     phone: '',
     notes: '',
   })
+  const [paymentMethod, setPaymentMethod] = useState<'pay_at_appointment' | 'pay_online'>('pay_at_appointment')
+  const [paymentToken, setPaymentToken] = useState<string | null>(null)
+  const [paymentReady, setPaymentReady] = useState(false)
   const [loading, setLoading] = useState(false)
   const [slotsLoading, setSlotsLoading] = useState(false)
+  const [nextAvailableLoading, setNextAvailableLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // Generate next 60 days for date selection
-  const availableDates = Array.from({ length: 60 }, (_, i) => addDays(new Date(), i + 1))
+  // Date range for calendar
+  const tomorrow = addDays(new Date(), 1)
+  const maxDate = addDays(new Date(), 60)
 
   // Fetch services on mount
   useEffect(() => {
@@ -74,6 +81,22 @@ export default function BookingPage() {
     }
   }, [selectedDate, selectedService])
 
+  const handleGoToNextAvailable = async () => {
+    if (!selectedService) return
+    setNextAvailableLoading(true)
+    try {
+      const res = await fetch(`/api/appointments/next-available?service_id=${selectedService.id}`)
+      const data = await res.json()
+      if (data.date) {
+        setSelectedDate(parseISO(data.date))
+      }
+    } catch (err) {
+      console.error('Failed to find next available:', err)
+    } finally {
+      setNextAvailableLoading(false)
+    }
+  }
+
   const formatTimeSlot = (time: string) => {
     const [hours, minutes] = time.split(':').map(Number)
     const period = hours >= 12 ? 'PM' : 'AM'
@@ -86,6 +109,19 @@ export default function BookingPage() {
 
     setLoading(true)
     setError(null)
+
+    // Tokenize card if paying online
+    let token = paymentToken
+    if (paymentMethod === 'pay_online' && !token) {
+      const tokenizeFn = (window as any).__squareTokenize
+      if (tokenizeFn) {
+        token = await tokenizeFn()
+        if (!token) {
+          setLoading(false)
+          return
+        }
+      }
+    }
 
     try {
       const response = await fetch('/api/appointments', {
@@ -102,6 +138,8 @@ export default function BookingPage() {
             phone: clientInfo.phone,
           },
           notes: clientInfo.notes,
+          payment_method: paymentMethod,
+          payment_token: token || undefined,
         }),
       })
 
@@ -132,6 +170,9 @@ export default function BookingPage() {
           clientInfo.email.trim() !== '' &&
           clientInfo.phone.trim() !== ''
         )
+      case 'payment':
+        if (paymentMethod === 'pay_at_appointment') return true
+        return paymentReady
       case 'confirm':
         return true
       default:
@@ -142,16 +183,18 @@ export default function BookingPage() {
   const nextStep = () => {
     if (step === 'service') setStep('datetime')
     else if (step === 'datetime') setStep('contact')
-    else if (step === 'contact') setStep('confirm')
+    else if (step === 'contact') setStep('payment')
+    else if (step === 'payment') setStep('confirm')
   }
 
   const prevStep = () => {
     if (step === 'datetime') setStep('service')
     else if (step === 'contact') setStep('datetime')
-    else if (step === 'confirm') setStep('contact')
+    else if (step === 'payment') setStep('contact')
+    else if (step === 'confirm') setStep('payment')
   }
 
-  const steps = ['service', 'datetime', 'contact', 'confirm']
+  const steps = ['service', 'datetime', 'contact', 'payment', 'confirm']
   const currentStepIndex = steps.indexOf(step)
 
   return (
@@ -201,6 +244,7 @@ export default function BookingPage() {
             {step === 'service' && 'Choose your service'}
             {step === 'datetime' && 'Select date & time'}
             {step === 'contact' && 'Your information'}
+            {step === 'payment' && 'Payment method'}
             {step === 'confirm' && 'Confirm booking'}
           </p>
         </div>
@@ -233,28 +277,47 @@ export default function BookingPage() {
           {/* Step 2: Date & Time Selection */}
           {step === 'datetime' && (
             <div className="space-y-6 sm:space-y-8">
-              {/* Date Selection */}
+              {/* Date Selection - Calendar */}
               <div>
                 <h3 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4">Select a Date</h3>
-                <div className="flex gap-2 sm:gap-3 overflow-x-auto pb-4 -mx-4 px-4 sm:mx-0 sm:px-0">
-                  {availableDates.slice(0, 14).map((date) => {
-                    const isSelected = selectedDate && format(date, 'yyyy-MM-dd') === format(selectedDate, 'yyyy-MM-dd')
-                    return (
-                      <button
-                        key={date.toISOString()}
-                        onClick={() => setSelectedDate(date)}
-                        className={`flex-shrink-0 px-3 sm:px-4 py-2 sm:py-3 rounded-xl border-2 transition-colors min-w-[60px] sm:min-w-[70px] ${
-                          isSelected
-                            ? 'border-primary bg-primary/10'
-                            : 'border-secondary/50 hover:border-primary/50'
-                        }`}
-                      >
-                        <p className="text-xs sm:text-sm text-text-muted">{format(date, 'EEE')}</p>
-                        <p className="text-base sm:text-lg font-semibold">{format(date, 'd')}</p>
-                        <p className="text-xs sm:text-sm text-text-muted">{format(date, 'MMM')}</p>
-                      </button>
-                    )
-                  })}
+                <div className="flex justify-center mb-3">
+                  <button
+                    onClick={handleGoToNextAvailable}
+                    disabled={nextAvailableLoading}
+                    className="text-sm text-primary hover:text-primary-dark font-medium transition-colors disabled:opacity-50"
+                  >
+                    {nextAvailableLoading ? 'Finding...' : 'Go to next available date →'}
+                  </button>
+                </div>
+                <div className="flex justify-center">
+                  <DayPicker
+                    mode="single"
+                    selected={selectedDate ?? undefined}
+                    onSelect={(date) => setSelectedDate(date ?? null)}
+                    disabled={[
+                      { before: tomorrow },
+                      { after: maxDate },
+                    ]}
+                    defaultMonth={tomorrow}
+                    classNames={{
+                      root: 'bg-white rounded-xl border border-secondary/50 p-4 shadow-sm',
+                      months: 'flex flex-col',
+                      month_caption: 'flex justify-center items-center mb-2',
+                      caption_label: 'text-base font-semibold text-foreground',
+                      nav: 'flex items-center gap-1',
+                      button_previous: 'p-1.5 rounded-lg hover:bg-secondary/30 text-text-muted',
+                      button_next: 'p-1.5 rounded-lg hover:bg-secondary/30 text-text-muted',
+                      weekdays: 'flex',
+                      weekday: 'w-10 h-10 flex items-center justify-center text-xs font-medium text-text-muted',
+                      week: 'flex',
+                      day: 'w-10 h-10 flex items-center justify-center',
+                      day_button: 'w-9 h-9 rounded-full text-sm font-medium transition-colors hover:bg-primary/10 hover:text-primary focus:outline-none focus:ring-2 focus:ring-primary/50',
+                      selected: '[&>button]:bg-primary [&>button]:text-white [&>button]:hover:bg-primary-dark',
+                      today: '[&>button]:font-bold [&>button]:text-primary',
+                      disabled: '[&>button]:text-secondary [&>button]:cursor-not-allowed [&>button]:hover:bg-transparent [&>button]:hover:text-secondary',
+                      outside: '[&>button]:text-secondary/50',
+                    }}
+                  />
                 </div>
               </div>
 
@@ -342,7 +405,24 @@ export default function BookingPage() {
             </div>
           )}
 
-          {/* Step 4: Confirmation */}
+          {/* Step 4: Payment */}
+          {step === 'payment' && selectedService && (
+            <div className="max-w-md mx-auto">
+              <SquarePayment
+                amountCents={selectedService.price_cents}
+                priceDisplay={selectedService.price_display}
+                paymentMethod={paymentMethod}
+                onPaymentMethodChange={(method) => {
+                  setPaymentMethod(method)
+                  setPaymentToken(null)
+                }}
+                onPaymentToken={setPaymentToken}
+                onPaymentReady={setPaymentReady}
+              />
+            </div>
+          )}
+
+          {/* Step 5: Confirmation */}
           {step === 'confirm' && selectedService && selectedDate && selectedTime && (
             <div className="max-w-md mx-auto">
               <Card className="p-4 sm:p-6">
@@ -385,13 +465,21 @@ export default function BookingPage() {
                       <p className="text-xs sm:text-sm">{clientInfo.notes}</p>
                     </div>
                   )}
-                </div>
 
-                <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-secondary/20 rounded-xl">
-                  <p className="text-xs sm:text-sm text-text-muted">
-                    <strong>Payment:</strong> Payment is collected at your appointment.
-                    We accept cash, card, and Venmo (@lenaecrys).
-                  </p>
+                  <hr className="border-secondary/50" />
+
+                  <div>
+                    <span className="text-text-muted text-xs sm:text-sm">Payment</span>
+                    {paymentMethod === 'pay_online' ? (
+                      <p className="text-sm font-medium text-primary">
+                        Paying {selectedService.price_display} online
+                      </p>
+                    ) : (
+                      <p className="text-xs sm:text-sm text-text-muted">
+                        Payment will be collected at your appointment. We accept cash, card, and Venmo.
+                      </p>
+                    )}
+                  </div>
                 </div>
 
                 {error && (
@@ -421,7 +509,7 @@ export default function BookingPage() {
               loading={loading}
               className="min-h-[48px] px-4 sm:px-6"
             >
-              Confirm Booking
+              {paymentMethod === 'pay_online' ? 'Pay & Confirm' : 'Confirm Booking'}
             </Button>
           ) : (
             <Button onClick={nextStep} disabled={!canProceed()} className="min-h-[48px] px-4 sm:px-6">

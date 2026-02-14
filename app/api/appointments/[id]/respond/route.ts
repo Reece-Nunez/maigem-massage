@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { sendApprovalEmail, sendRejectionEmail } from '@/lib/utils/email'
+import { createSquareBooking } from '@/lib/square/bookings'
+import { getSquareServiceById } from '@/lib/square/services'
 
 export async function GET(
   request: NextRequest,
@@ -71,6 +73,29 @@ export async function GET(
         status: 500,
         headers: { 'Content-Type': 'text/html' },
       })
+    }
+
+    // Sync to Square Bookings on accept
+    if (action === 'accept') {
+      try {
+        const squareService = await getSquareServiceById(appointment.service_id)
+        if (squareService) {
+          const squareBookingId = await createSquareBooking({
+            squareCustomerId: appointment.client.square_customer_id,
+            squareServiceVariationId: squareService.square_variation_id,
+            startAt: appointment.start_datetime,
+            durationMinutes: squareService.duration_minutes,
+          })
+          if (squareBookingId) {
+            await supabase
+              .from('appointments')
+              .update({ square_booking_id: squareBookingId })
+              .eq('id', id)
+          }
+        }
+      } catch (err) {
+        console.error('Failed to sync booking to Square:', err)
+      }
     }
 
     // Send appropriate email to client

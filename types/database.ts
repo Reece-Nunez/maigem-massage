@@ -114,6 +114,7 @@ export type Database = {
           email: string
           phone: string
           notes: string | null
+          square_customer_id: string | null
           created_at: string
           updated_at: string
         }
@@ -125,6 +126,7 @@ export type Database = {
           email: string
           phone: string
           notes?: string | null
+          square_customer_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -136,6 +138,7 @@ export type Database = {
           email?: string
           phone?: string
           notes?: string | null
+          square_customer_id?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -154,6 +157,10 @@ export type Database = {
           reminder_sent: boolean
           confirmation_sent: boolean
           cancellation_token: string | null
+          square_booking_id: string | null
+          square_payment_id: string | null
+          payment_method: 'pay_at_appointment' | 'pay_online'
+          payment_status: 'unpaid' | 'paid' | 'refunded' | 'failed'
           created_at: string
           updated_at: string
         }
@@ -169,6 +176,10 @@ export type Database = {
           reminder_sent?: boolean
           confirmation_sent?: boolean
           cancellation_token?: string | null
+          square_booking_id?: string | null
+          square_payment_id?: string | null
+          payment_method?: 'pay_at_appointment' | 'pay_online'
+          payment_status?: 'unpaid' | 'paid' | 'refunded' | 'failed'
           created_at?: string
           updated_at?: string
         }
@@ -184,6 +195,10 @@ export type Database = {
           reminder_sent?: boolean
           confirmation_sent?: boolean
           cancellation_token?: string | null
+          square_booking_id?: string | null
+          square_payment_id?: string | null
+          payment_method?: 'pay_at_appointment' | 'pay_online'
+          payment_status?: 'unpaid' | 'paid' | 'refunded' | 'failed'
           created_at?: string
           updated_at?: string
         }
