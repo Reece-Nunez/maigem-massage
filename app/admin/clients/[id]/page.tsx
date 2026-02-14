@@ -1,16 +1,11 @@
-import { createClient } from '@/lib/supabase/server'
 import { Card } from '@/components/ui/card'
 import { format } from 'date-fns'
 import { toZonedTime } from 'date-fns-tz'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import type { Appointment, Service, Client } from '@/types/database'
+import { getSquareCustomerById, getSquareBookingsForCustomer } from '@/lib/square/admin'
 
 const BUSINESS_TIMEZONE = 'America/Chicago'
-
-type AppointmentWithService = Appointment & {
-  service: Service | null
-}
 
 export default async function ClientDetailPage({
   params,
@@ -18,31 +13,20 @@ export default async function ClientDetailPage({
   params: Promise<{ id: string }>
 }) {
   const { id } = await params
-  const supabase = await createClient()
 
-  const { data: clientData, error } = await supabase
-    .from('clients')
-    .select('*')
-    .eq('id', id)
-    .single()
+  // Fetch customer and their bookings from Square
+  const [customer, bookings] = await Promise.all([
+    getSquareCustomerById(id),
+    getSquareBookingsForCustomer(id),
+  ])
 
-  if (error || !clientData) {
+  if (!customer) {
     notFound()
   }
 
-  const client = clientData as Client
-
-  const { data: appointmentsData } = await supabase
-    .from('appointments')
-    .select(`*, service:services(*)`)
-    .eq('client_id', id)
-    .order('start_datetime', { ascending: false })
-
-  const appointments = (appointmentsData || []) as AppointmentWithService[]
-
-  const completedCount = appointments.filter((a) => a.status === 'completed').length
-  const upcomingCount = appointments.filter(
-    (a) => a.status === 'confirmed' && new Date(a.start_datetime) > new Date()
+  const confirmedCount = bookings.filter(b => b.status === 'confirmed').length
+  const upcomingCount = bookings.filter(
+    b => b.status === 'confirmed' && new Date(b.startAt) > new Date()
   ).length
 
   return (
@@ -56,21 +40,25 @@ export default async function ClientDetailPage({
 
       <div className="flex items-start gap-6 mb-8">
         <div className="w-20 h-20 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-2xl">
-          {client.first_name?.[0]}
-          {client.last_name?.[0]}
+          {customer.firstName?.[0]}
+          {customer.lastName?.[0]}
         </div>
         <div>
           <h1 className="text-3xl font-bold text-foreground">
-            {client.first_name} {client.last_name}
+            {customer.firstName} {customer.lastName}
           </h1>
           <div className="flex gap-4 mt-2 text-text-muted">
-            <a href={`mailto:${client.email}`} className="hover:text-primary">
-              {client.email}
-            </a>
-            <span>•</span>
-            <a href={`tel:${client.phone}`} className="hover:text-primary">
-              {client.phone}
-            </a>
+            {customer.email && (
+              <a href={`mailto:${customer.email}`} className="hover:text-primary">
+                {customer.email}
+              </a>
+            )}
+            {customer.email && customer.phone && <span>•</span>}
+            {customer.phone && (
+              <a href={`tel:${customer.phone}`} className="hover:text-primary">
+                {customer.phone}
+              </a>
+            )}
           </div>
         </div>
       </div>
@@ -80,12 +68,12 @@ export default async function ClientDetailPage({
         <Card className="p-6">
           <p className="text-text-muted text-sm">Total Appointments</p>
           <p className="text-3xl font-bold text-primary mt-1">
-            {appointments.length}
+            {bookings.length}
           </p>
         </Card>
         <Card className="p-6">
-          <p className="text-text-muted text-sm">Completed</p>
-          <p className="text-3xl font-bold text-primary mt-1">{completedCount}</p>
+          <p className="text-text-muted text-sm">Confirmed</p>
+          <p className="text-3xl font-bold text-primary mt-1">{confirmedCount}</p>
         </Card>
         <Card className="p-6">
           <p className="text-text-muted text-sm">Upcoming</p>
@@ -97,25 +85,25 @@ export default async function ClientDetailPage({
       <Card className="p-6">
         <h2 className="text-xl font-bold text-foreground mb-6">Appointment History</h2>
 
-        {appointments.length > 0 ? (
+        {bookings.length > 0 ? (
           <div className="space-y-4">
-            {appointments.map((appointment) => {
+            {bookings.map((booking) => {
               const startDate = toZonedTime(
-                new Date(appointment.start_datetime),
+                new Date(booking.startAt),
                 BUSINESS_TIMEZONE
               )
-              const isPast = new Date(appointment.start_datetime) < new Date()
+              const isPast = new Date(booking.startAt) < new Date()
 
               return (
                 <div
-                  key={appointment.id}
+                  key={booking.id}
                   className={`flex items-center justify-between p-4 rounded-lg ${
                     isPast ? 'bg-secondary/10' : 'bg-primary/5'
                   }`}
                 >
                   <div>
                     <p className="font-semibold text-foreground">
-                      {appointment.service?.name}
+                      {booking.serviceName}
                     </p>
                     <p className="text-sm text-text-muted">
                       {format(startDate, 'EEEE, MMMM d, yyyy')} at{' '}
@@ -124,17 +112,19 @@ export default async function ClientDetailPage({
                   </div>
                   <span
                     className={`px-3 py-1 rounded-full text-sm font-medium ${
-                      appointment.status === 'confirmed'
+                      booking.status === 'confirmed'
                         ? 'bg-green-100 text-green-700'
-                        : appointment.status === 'cancelled'
+                        : booking.status === 'cancelled'
                         ? 'bg-red-100 text-red-700'
-                        : appointment.status === 'completed'
-                        ? 'bg-blue-100 text-blue-700'
+                        : booking.status === 'no_show'
+                        ? 'bg-gray-100 text-gray-700'
                         : 'bg-yellow-100 text-yellow-700'
                     }`}
                   >
-                    {appointment.status.charAt(0).toUpperCase() +
-                      appointment.status.slice(1)}
+                    {booking.status === 'no_show'
+                      ? 'No Show'
+                      : booking.status.charAt(0).toUpperCase() +
+                        booking.status.slice(1)}
                   </span>
                 </div>
               )

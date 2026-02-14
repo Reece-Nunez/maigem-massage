@@ -4,6 +4,7 @@ import { format, startOfDay, endOfDay, startOfWeek, endOfWeek } from 'date-fns'
 import { toZonedTime } from 'date-fns-tz'
 import Link from 'next/link'
 import { PendingAppointmentActions } from './pending-actions'
+import { getSquareBookings, getSquareCustomers } from '@/lib/square/admin'
 import type { Appointment, Client, Service } from '@/types/database'
 
 const BUSINESS_TIMEZONE = 'America/Chicago'
@@ -18,60 +19,47 @@ export default async function AdminDashboard() {
 
   const now = new Date()
   const zonedNow = toZonedTime(now, BUSINESS_TIMEZONE)
-  const todayStart = startOfDay(zonedNow)
-  const todayEnd = endOfDay(zonedNow)
-  const weekStart = startOfWeek(zonedNow, { weekStartsOn: 0 })
-  const weekEnd = endOfWeek(zonedNow, { weekStartsOn: 0 })
+  const todayStr = format(zonedNow, 'yyyy-MM-dd')
+  const weekStartDate = startOfWeek(zonedNow, { weekStartsOn: 0 })
+  const weekEndDate = endOfWeek(zonedNow, { weekStartsOn: 0 })
 
-  // Fetch stats in parallel
-  const [
-    { count: todayCount },
-    { count: weekCount },
-    { count: totalClients },
-    { count: pendingCount },
-    { data: pendingData },
-    { data: upcomingData },
-  ] = await Promise.all([
-    supabase
-      .from('appointments')
-      .select('*', { count: 'exact', head: true })
-      .gte('start_datetime', todayStart.toISOString())
-      .lte('start_datetime', todayEnd.toISOString())
-      .eq('status', 'confirmed'),
-    supabase
-      .from('appointments')
-      .select('*', { count: 'exact', head: true })
-      .gte('start_datetime', weekStart.toISOString())
-      .lte('start_datetime', weekEnd.toISOString())
-      .eq('status', 'confirmed'),
-    supabase.from('clients').select('*', { count: 'exact', head: true }),
-    supabase
-      .from('appointments')
-      .select('*', { count: 'exact', head: true })
-      .eq('status', 'pending'),
+  // Fetch Square data and pending from Supabase in parallel
+  const [squareBookings, squareCustomers, { data: pendingData }] = await Promise.all([
+    getSquareBookings(),
+    getSquareCustomers(),
     supabase
       .from('appointments')
       .select(`*, client:clients(*), service:services(*)`)
       .eq('status', 'pending')
       .order('created_at', { ascending: true })
       .limit(10),
-    supabase
-      .from('appointments')
-      .select(`*, client:clients(*), service:services(*)`)
-      .gte('start_datetime', now.toISOString())
-      .eq('status', 'confirmed')
-      .order('start_datetime', { ascending: true })
-      .limit(5),
   ])
 
   const pendingAppointments = (pendingData || []) as AppointmentWithRelations[]
-  const upcomingAppointments = (upcomingData || []) as AppointmentWithRelations[]
+
+  // Calculate stats from Square bookings
+  const confirmedBookings = squareBookings.filter(b => b.status === 'confirmed')
+
+  const todayBookings = confirmedBookings.filter(b => {
+    const bookingDate = toZonedTime(new Date(b.startAt), BUSINESS_TIMEZONE)
+    return format(bookingDate, 'yyyy-MM-dd') === todayStr
+  })
+
+  const weekBookings = confirmedBookings.filter(b => {
+    const bookingDate = toZonedTime(new Date(b.startAt), BUSINESS_TIMEZONE)
+    return bookingDate >= weekStartDate && bookingDate <= weekEndDate
+  })
+
+  const upcomingBookings = confirmedBookings
+    .filter(b => new Date(b.startAt) > now)
+    .sort((a, b) => new Date(a.startAt).getTime() - new Date(b.startAt).getTime())
+    .slice(0, 5)
 
   const stats = [
-    { label: 'Pending Requests', value: pendingCount || 0, highlight: (pendingCount || 0) > 0 },
-    { label: "Today's Confirmed", value: todayCount || 0 },
-    { label: 'This Week', value: weekCount || 0 },
-    { label: 'Total Clients', value: totalClients || 0 },
+    { label: 'Pending Requests', value: pendingAppointments.length, highlight: pendingAppointments.length > 0 },
+    { label: "Today's Confirmed", value: todayBookings.length },
+    { label: 'This Week', value: weekBookings.length },
+    { label: 'Total Clients', value: squareCustomers.length },
   ]
 
   return (
@@ -90,7 +78,7 @@ export default async function AdminDashboard() {
         ))}
       </div>
 
-      {/* Pending Appointments - Show prominently if any */}
+      {/* Pending Appointments - from Supabase (not yet in Square) */}
       {pendingAppointments && pendingAppointments.length > 0 && (
         <Card className="p-4 sm:p-6 mb-6 sm:mb-8 border-2 border-yellow-500 bg-yellow-50">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-0 mb-4 sm:mb-6">
@@ -151,7 +139,7 @@ export default async function AdminDashboard() {
         </Card>
       )}
 
-      {/* Upcoming Confirmed Appointments */}
+      {/* Upcoming Confirmed Appointments - from Square */}
       <Card className="p-4 sm:p-6">
         <div className="flex items-center justify-between mb-4 sm:mb-6">
           <h2 className="text-lg sm:text-xl font-bold text-foreground">Upcoming</h2>
@@ -163,20 +151,19 @@ export default async function AdminDashboard() {
           </Link>
         </div>
 
-        {upcomingAppointments && upcomingAppointments.length > 0 ? (
+        {upcomingBookings.length > 0 ? (
           <div className="space-y-3 sm:space-y-4">
-            {upcomingAppointments.map((appointment) => {
+            {upcomingBookings.map((booking) => {
               const startDate = toZonedTime(
-                new Date(appointment.start_datetime),
+                new Date(booking.startAt),
                 BUSINESS_TIMEZONE
               )
               const isToday =
-                format(startDate, 'yyyy-MM-dd') ===
-                format(zonedNow, 'yyyy-MM-dd')
+                format(startDate, 'yyyy-MM-dd') === todayStr
 
               return (
                 <div
-                  key={appointment.id}
+                  key={booking.id}
                   className="flex items-center justify-between gap-3 p-3 sm:p-4 bg-secondary/20 rounded-lg"
                 >
                   <div className="flex items-center gap-3 sm:gap-4 min-w-0">
@@ -185,15 +172,14 @@ export default async function AdminDashboard() {
                         isToday ? 'bg-primary' : 'bg-secondary'
                       }`}
                     >
-                      {appointment.client?.first_name?.[0]}
-                      {appointment.client?.last_name?.[0]}
+                      {booking.customerName.split(' ').map(n => n[0]).join('').slice(0, 2)}
                     </div>
                     <div className="min-w-0">
                       <p className="font-semibold text-foreground text-sm sm:text-base truncate">
-                        {appointment.client?.first_name} {appointment.client?.last_name}
+                        {booking.customerName}
                       </p>
                       <p className="text-xs sm:text-sm text-text-muted truncate">
-                        {appointment.service?.name}
+                        {booking.serviceName}
                       </p>
                     </div>
                   </div>
@@ -234,9 +220,9 @@ export default async function AdminDashboard() {
               href="/admin/availability"
               className="block p-3 bg-secondary/20 rounded-lg hover:bg-secondary/40 transition-colors"
             >
-              <p className="font-medium text-foreground text-sm">Update Hours</p>
+              <p className="font-medium text-foreground text-sm">Availability</p>
               <p className="text-xs text-text-muted hidden sm:block">
-                Change your availability
+                View Square availability
               </p>
             </Link>
           </div>
