@@ -252,6 +252,36 @@ export type Database = {
         }
         Relationships: []
       }
+      analytics_events: {
+        Row: {
+          id: string
+          event_type: string
+          source: string | null
+          metadata: Json
+          user_agent: string | null
+          referrer: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          event_type: string
+          source?: string | null
+          metadata?: Json
+          user_agent?: string | null
+          referrer?: string | null
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          event_type?: string
+          source?: string | null
+          metadata?: Json
+          user_agent?: string | null
+          referrer?: string | null
+          created_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

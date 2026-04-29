@@ -224,6 +224,20 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Log conversion event (non-blocking)
+    supabase.from('analytics_events').insert({
+      event_type: 'booking_completed',
+      source: 'website',
+      metadata: {
+        service_id,
+        service_name: service.name,
+        payment_method,
+        price_cents: service.price_cents,
+      },
+    }).then(({ error }) => {
+      if (error) console.error('Failed to log booking_completed event:', error)
+    })
+
     // Send emails (don't block on these)
     // 1. Send "request received" email to client
     sendRequestReceivedEmail({

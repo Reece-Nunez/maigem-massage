@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 
 const alta = localFont({
@@ -23,6 +24,7 @@ export default function RootLayout({
         className={`${alta.variable} ${alta.className} antialiased`}
       >
         {children}
+        <Analytics />
       </body>
     </html>
   );

@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
+import { trackEvent } from "@/lib/analytics/track";
 
 export default function Home() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -27,7 +28,11 @@ export default function Home() {
             <a href="#services" className="hover:text-primary transition-colors text-xl tracking-wide">Services</a>
             <a href="#about" className="hover:text-primary transition-colors text-xl tracking-wide">About</a>
             <a href="#location" className="hover:text-primary transition-colors text-xl tracking-wide">Location</a>
-            <a href="/book" className="bg-primary text-white px-5 py-2 rounded-full hover:bg-primary-dark transition-colors text-xl tracking-wide">
+            <a
+              href="/book"
+              onClick={() => trackEvent('booking_started', 'header_desktop')}
+              className="bg-primary text-white px-5 py-2 rounded-full hover:bg-primary-dark transition-colors text-xl tracking-wide"
+            >
               Book Now
             </a>
           </div>
@@ -77,6 +82,7 @@ export default function Home() {
               </a>
               <a
                 href="/book"
+                onClick={() => trackEvent('booking_started', 'header_mobile')}
                 className="block py-3 px-4 text-lg font-medium text-center bg-primary text-white rounded-lg hover:bg-primary-dark transition-colors"
               >
                 Book Now
@@ -100,6 +106,7 @@ export default function Home() {
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start">
               <a
                 href="/book"
+                onClick={() => trackEvent('booking_started', 'hero')}
                 className="bg-primary text-white px-6 sm:px-8 py-3 rounded-full text-base sm:text-lg font-medium hover:bg-primary-dark transition-colors text-center"
               >
                 Schedule Appointment
@@ -338,6 +345,7 @@ export default function Home() {
           <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
             <a
               href="tel:+15803049861"
+              onClick={() => trackEvent('phone_click', 'contact_section')}
               className="bg-white text-primary px-6 sm:px-8 py-3 rounded-full text-base sm:text-lg font-medium hover:bg-background transition-colors inline-flex items-center justify-center gap-2 min-h-[48px]"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -349,6 +357,7 @@ export default function Home() {
               href="https://maps.google.com/?q=205+E+Chestnut+Ave,+Ponca+City,+OK+74604"
               target="_blank"
               rel="noopener noreferrer"
+              onClick={() => trackEvent('directions_click', 'contact_section')}
               className="border-2 border-white text-white px-6 sm:px-8 py-3 rounded-full text-base sm:text-lg font-medium hover:bg-white hover:text-primary transition-colors inline-flex items-center justify-center gap-2 min-h-[48px]"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
