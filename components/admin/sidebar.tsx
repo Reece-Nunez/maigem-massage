@@ -150,8 +150,10 @@ export function AdminSidebar() {
             <Image
               src="/maigem-logo.png"
               alt="MaiGem Massage"
-              width={40}
-              height={40}
+              width={500}
+              height={500}
+              quality={100}
+              sizes="96px"
               className="h-24 w-24 rounded-full"
             />
             <div>

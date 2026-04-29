@@ -211,7 +211,7 @@ export default async function AnalyticsPage() {
       </p>
 
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 mb-6 sm:mb-8">
-        <Link href="/admin/clients" className="block group">
+        <Link href="/admin/analytics/website-clients?range=all" className="block group">
           <Card className="p-3 sm:p-6 hover:shadow-md hover:border-primary/40 transition-all cursor-pointer h-full">
             <p className="text-text-muted text-xs sm:text-sm">Total Website Clients</p>
             <p className="text-2xl sm:text-4xl font-bold mt-1 sm:mt-2 text-primary group-hover:text-primary-dark">
@@ -222,7 +222,7 @@ export default async function AnalyticsPage() {
             </p>
           </Card>
         </Link>
-        <Link href="/admin/appointments" className="block group">
+        <Link href="/admin/analytics/website-bookings?range=all" className="block group">
           <Card className="p-3 sm:p-6 hover:shadow-md hover:border-primary/40 transition-all cursor-pointer h-full">
             <p className="text-text-muted text-xs sm:text-sm">Total Booking Requests</p>
             <p className="text-2xl sm:text-4xl font-bold mt-1 sm:mt-2 text-primary group-hover:text-primary-dark">
@@ -241,7 +241,11 @@ export default async function AnalyticsPage() {
         </h3>
         <div className="space-y-2">
           {monthBuckets.map((b) => (
-            <div key={b.key} className="flex items-center gap-3 text-sm">
+            <Link
+              key={b.key}
+              href={`/admin/analytics/website-bookings?month=${b.key}`}
+              className="flex items-center gap-3 text-sm hover:bg-secondary/10 rounded px-1 py-0.5 -mx-1 transition-colors"
+            >
               <span className="w-10 text-text-muted text-xs flex-shrink-0">{b.label}</span>
               <div className="flex-1 bg-secondary/20 rounded-full h-6 overflow-hidden">
                 <div
@@ -252,7 +256,7 @@ export default async function AnalyticsPage() {
               <span className="w-8 text-right text-foreground font-medium text-xs flex-shrink-0">
                 {b.count}
               </span>
-            </div>
+            </Link>
           ))}
         </div>
       </Card>
