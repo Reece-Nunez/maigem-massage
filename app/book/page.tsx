@@ -9,6 +9,7 @@ import { DayPicker } from 'react-day-picker'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
+import { LogoSpinner } from '@/components/ui/logo-spinner'
 import { SquarePayment } from './components/SquarePayment'
 import type { Service } from '@/types/database'
 
@@ -326,7 +327,9 @@ export default function BookingPage() {
                 <div>
                   <h3 className="text-base sm:text-lg font-semibold text-foreground mb-3 sm:mb-4">Select a Time</h3>
                   {slotsLoading ? (
-                    <div className="text-center py-6 sm:py-8 text-text-muted text-sm sm:text-base">Loading available times...</div>
+                    <div className="py-6 sm:py-8">
+                      <LogoSpinner size="md" label="Loading available times..." />
+                    </div>
                   ) : availableSlots.filter(s => s.available).length === 0 ? (
                     <div className="text-center py-6 sm:py-8 text-text-muted text-sm sm:text-base">
                       No available times for this date. Please select another date.

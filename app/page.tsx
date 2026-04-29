@@ -16,8 +16,11 @@ export default function Home() {
             <Image
               src="/maigem-logo.png"
               alt="MaiGem Massage"
-              width={50}
-              height={50}
+              width={500}
+              height={500}
+              priority
+              quality={100}
+              sizes="(min-width: 640px) 96px, 64px"
               className="h-16 w-16 sm:h-24 sm:w-24"
             />
             <span className="text-lg sm:text-2xl font-semibold text-foreground tracking-wide">MaiGem Massage</span>
@@ -377,8 +380,9 @@ export default function Home() {
             <Image
               src="/maigem-logo.png"
               alt="MaiGem Massage"
-              width={40}
-              height={40}
+              width={80}
+              height={80}
+              style={{ filter: 'brightness(0) invert(1)' }}
               className="rounded-full w-8 h-8 sm:w-10 sm:h-10"
             />
             <span className="text-white font-medium text-sm sm:text-base">MaiGem Massage</span>

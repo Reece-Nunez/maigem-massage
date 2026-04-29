@@ -1,6 +1,9 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Card } from '@/components/ui/card'
 import { format, subDays, startOfDay } from 'date-fns'
+import { toZonedTime } from 'date-fns-tz'
+
+const BUSINESS_TIMEZONE = 'America/Chicago'
 
 type EventRow = {
   event_type: string
@@ -104,7 +107,7 @@ export default async function AnalyticsPage() {
                   )}
                 </div>
                 <span className="text-text-muted text-xs flex-shrink-0">
-                  {format(new Date(e.created_at), 'MMM d, h:mm a')}
+                  {format(toZonedTime(new Date(e.created_at), BUSINESS_TIMEZONE), 'MMM d, h:mm a')}
                 </span>
               </div>
             ))}
