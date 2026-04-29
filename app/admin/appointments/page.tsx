@@ -115,7 +115,18 @@ export default async function AppointmentsPage({
 
   return (
     <div>
-      <h1 className="text-3xl font-bold text-foreground mb-8">Appointments</h1>
+      <div className="flex items-center justify-between flex-wrap gap-3 mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Appointments</h1>
+        <a
+          href="/admin/appointments/new"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-primary text-white rounded-full text-sm font-medium hover:bg-primary-dark transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          New Appointment
+        </a>
+      </div>
 
       {/* Filters */}
       <div className="flex gap-2 mb-6 flex-wrap">
