@@ -38,3 +38,37 @@ export async function cancelSquareBooking(bookingId: string): Promise<void> {
     bookingVersion: version,
   })
 }
+
+interface UpdateBookingParams {
+  bookingId: string
+  startAt: string
+  durationMinutes: number
+  squareServiceVariationId: string
+  customerNote?: string | null
+}
+
+export async function updateSquareBooking(
+  params: UpdateBookingParams
+): Promise<void> {
+  // Optimistic concurrency: Square requires the current booking version
+  const getResponse = await bookingsApi.get({ bookingId: params.bookingId })
+  const version = getResponse.booking?.version
+
+  await bookingsApi.update({
+    bookingId: params.bookingId,
+    idempotencyKey: uuidv4(),
+    booking: {
+      version,
+      locationId: SQUARE_LOCATION_ID,
+      startAt: params.startAt,
+      customerNote: params.customerNote ?? undefined,
+      appointmentSegments: [
+        {
+          serviceVariationId: params.squareServiceVariationId,
+          durationMinutes: params.durationMinutes,
+          teamMemberId: 'me',
+        },
+      ],
+    },
+  })
+}

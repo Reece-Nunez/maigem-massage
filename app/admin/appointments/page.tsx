@@ -218,6 +218,14 @@ export default async function AppointmentsPage({
                           : appointment.status.charAt(0).toUpperCase() +
                             appointment.status.slice(1)}
                       </span>
+                      {appointment.status !== 'cancelled' && (
+                        <a
+                          href={`/admin/appointments/${appointment.id}/edit`}
+                          className="px-3 py-1.5 rounded-full text-sm font-medium border border-secondary/60 text-foreground hover:bg-secondary/30 transition-colors whitespace-nowrap"
+                        >
+                          Edit
+                        </a>
+                      )}
                       {appointment.source === 'supabase' && (
                         <AppointmentActions
                           appointmentId={appointment.id}
