@@ -1,7 +1,8 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { Card } from '@/components/ui/card'
-import { format, subDays, startOfDay } from 'date-fns'
+import { format, subDays, startOfDay, startOfMonth, subMonths } from 'date-fns'
 import { toZonedTime } from 'date-fns-tz'
+import Link from 'next/link'
 
 const BUSINESS_TIMEZONE = 'America/Chicago'
 
@@ -24,17 +25,71 @@ export const dynamic = 'force-dynamic'
 
 export default async function AnalyticsPage() {
   const supabase = createAdminClient()
-  const since30 = startOfDay(subDays(new Date(), 30)).toISOString()
-  const since7 = startOfDay(subDays(new Date(), 7)).toISOString()
+  const now = new Date()
+  const since30 = startOfDay(subDays(now, 30)).toISOString()
+  const since7 = startOfDay(subDays(now, 7)).toISOString()
+  const since90 = startOfDay(subDays(now, 90)).toISOString()
+  const since12mo = startOfMonth(subMonths(now, 11)).toISOString()
 
-  const { data: events30 } = await supabase
-    .from('analytics_events')
-    .select('event_type, source, created_at')
-    .gte('created_at', since30)
-    .order('created_at', { ascending: false })
+  const [
+    { data: events30 },
+    { count: clientsAll },
+    { count: clients30 },
+    { count: clients90 },
+    { count: bookingsAll },
+    { count: bookings30 },
+    { count: bookings90 },
+    { data: bookingsByMonth },
+  ] = await Promise.all([
+    supabase
+      .from('analytics_events')
+      .select('event_type, source, created_at')
+      .gte('created_at', since30)
+      .order('created_at', { ascending: false }),
+    supabase.from('clients').select('*', { count: 'exact', head: true }),
+    supabase
+      .from('clients')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', since30),
+    supabase
+      .from('clients')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', since90),
+    supabase.from('appointments').select('*', { count: 'exact', head: true }),
+    supabase
+      .from('appointments')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', since30),
+    supabase
+      .from('appointments')
+      .select('*', { count: 'exact', head: true })
+      .gte('created_at', since90),
+    supabase
+      .from('appointments')
+      .select('created_at')
+      .gte('created_at', since12mo),
+  ])
 
   const events: EventRow[] = (events30 as EventRow[]) || []
   const events7 = events.filter(e => e.created_at >= since7)
+
+  // Aggregate bookings into per-month buckets for the last 12 months
+  const monthBuckets: { label: string; key: string; count: number }[] = []
+  for (let i = 11; i >= 0; i--) {
+    const d = subMonths(now, i)
+    monthBuckets.push({
+      label: format(d, 'MMM'),
+      key: format(d, 'yyyy-MM'),
+      count: 0,
+    })
+  }
+  for (const row of (bookingsByMonth as { created_at: string }[]) || []) {
+    const zoned = toZonedTime(new Date(row.created_at), BUSINESS_TIMEZONE)
+    const key = format(zoned, 'yyyy-MM')
+    const bucket = monthBuckets.find(b => b.key === key)
+    if (bucket) bucket.count += 1
+  }
+  const maxMonth = Math.max(1, ...monthBuckets.map(b => b.count))
 
   const countByType = (rows: EventRow[]) =>
     rows.reduce<Record<string, number>>((acc, r) => {
@@ -64,26 +119,89 @@ export default async function AnalyticsPage() {
 
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 mb-6 sm:mb-8">
         {types.map((type) => (
-          <Card key={type} className="p-3 sm:p-6">
-            <p className="text-text-muted text-xs sm:text-sm">{EVENT_LABELS[type]}</p>
-            <p className="text-2xl sm:text-4xl font-bold mt-1 sm:mt-2 text-primary">
-              {totals30[type] || 0}
+          <Link
+            key={type}
+            href={`/admin/analytics/events?type=${type}&range=30`}
+            className="block group"
+          >
+            <Card className="p-3 sm:p-6 hover:shadow-md hover:border-primary/40 transition-all cursor-pointer h-full">
+              <p className="text-text-muted text-xs sm:text-sm">{EVENT_LABELS[type]}</p>
+              <p className="text-2xl sm:text-4xl font-bold mt-1 sm:mt-2 text-primary group-hover:text-primary-dark">
+                {totals30[type] || 0}
+              </p>
+              <p className="text-xs text-text-muted mt-1">
+                {totals7[type] || 0} in last 7 days
+              </p>
+            </Card>
+          </Link>
+        ))}
+        <Link
+          href="/admin/analytics/events?type=booking_completed&range=30"
+          className="block group"
+        >
+          <Card className="p-3 sm:p-6 border-2 border-accent/40 hover:shadow-md transition-all cursor-pointer h-full">
+            <p className="text-text-muted text-xs sm:text-sm">Conversion Rate</p>
+            <p className="text-2xl sm:text-4xl font-bold mt-1 sm:mt-2 text-accent">
+              {conversionRate}{conversionRate !== '—' ? '%' : ''}
             </p>
             <p className="text-xs text-text-muted mt-1">
-              {totals7[type] || 0} in last 7 days
+              Booking started → completed (30d)
             </p>
           </Card>
-        ))}
-        <Card className="p-3 sm:p-6 border-2 border-accent/40">
-          <p className="text-text-muted text-xs sm:text-sm">Conversion Rate</p>
-          <p className="text-2xl sm:text-4xl font-bold mt-1 sm:mt-2 text-accent">
-            {conversionRate}{conversionRate !== '—' ? '%' : ''}
-          </p>
-          <p className="text-xs text-text-muted mt-1">
-            Booking started → completed (30d)
-          </p>
-        </Card>
+        </Link>
       </div>
+
+      <h2 className="text-lg sm:text-xl font-bold text-foreground mb-3 sm:mb-4">Historical (Website)</h2>
+      <p className="text-text-muted text-xs sm:text-sm mb-4">
+        Counts pulled from the database — every client and booking here came through the website.
+      </p>
+
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 mb-6 sm:mb-8">
+        <Link href="/admin/clients" className="block group">
+          <Card className="p-3 sm:p-6 hover:shadow-md hover:border-primary/40 transition-all cursor-pointer h-full">
+            <p className="text-text-muted text-xs sm:text-sm">Total Website Clients</p>
+            <p className="text-2xl sm:text-4xl font-bold mt-1 sm:mt-2 text-primary group-hover:text-primary-dark">
+              {clientsAll || 0}
+            </p>
+            <p className="text-xs text-text-muted mt-1">
+              {clients30 || 0} new in 30d · {clients90 || 0} in 90d
+            </p>
+          </Card>
+        </Link>
+        <Link href="/admin/appointments" className="block group">
+          <Card className="p-3 sm:p-6 hover:shadow-md hover:border-primary/40 transition-all cursor-pointer h-full">
+            <p className="text-text-muted text-xs sm:text-sm">Total Booking Requests</p>
+            <p className="text-2xl sm:text-4xl font-bold mt-1 sm:mt-2 text-primary group-hover:text-primary-dark">
+              {bookingsAll || 0}
+            </p>
+            <p className="text-xs text-text-muted mt-1">
+              {bookings30 || 0} in 30d · {bookings90 || 0} in 90d
+            </p>
+          </Card>
+        </Link>
+      </div>
+
+      <Card className="p-4 sm:p-6 mb-6 sm:mb-8">
+        <h3 className="text-base sm:text-lg font-bold text-foreground mb-4">
+          Booking Requests by Month
+        </h3>
+        <div className="space-y-2">
+          {monthBuckets.map((b) => (
+            <div key={b.key} className="flex items-center gap-3 text-sm">
+              <span className="w-10 text-text-muted text-xs flex-shrink-0">{b.label}</span>
+              <div className="flex-1 bg-secondary/20 rounded-full h-6 overflow-hidden">
+                <div
+                  className="bg-primary h-full rounded-full transition-all"
+                  style={{ width: `${(b.count / maxMonth) * 100}%` }}
+                />
+              </div>
+              <span className="w-8 text-right text-foreground font-medium text-xs flex-shrink-0">
+                {b.count}
+              </span>
+            </div>
+          ))}
+        </div>
+      </Card>
 
       <Card className="p-4 sm:p-6">
         <h2 className="text-lg sm:text-xl font-bold text-foreground mb-4">Recent Activity</h2>
