@@ -389,6 +389,12 @@ export default function Home() {
           <p className="text-xs sm:text-sm">
             &copy; {new Date().getFullYear()} MaiGem Massage. All rights reserved.
           </p>
+          <a
+            href="/auth/login"
+            className="text-xs text-white/40 hover:text-white/70 transition-colors"
+          >
+            Admin Login
+          </a>
         </div>
       </footer>
     </div>
