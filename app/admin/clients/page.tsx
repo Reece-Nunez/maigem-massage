@@ -1,24 +1,13 @@
-import { getSquareCustomers, getSquareBookings } from '@/lib/square/admin'
+import { getSquareCustomers, getSquareBookingCountsByCustomer } from '@/lib/square/admin'
 import { ClientsTable } from './clients-table'
 
 export const dynamic = 'force-dynamic'
 
 export default async function ClientsPage() {
-  const [customers, bookings] = await Promise.all([
+  const [customers, bookingCounts] = await Promise.all([
     getSquareCustomers(),
-    getSquareBookings(),
+    getSquareBookingCountsByCustomer(),
   ])
-
-  // Count bookings per customer
-  const bookingCounts = new Map<string, number>()
-  for (const booking of bookings) {
-    if (booking.customerId) {
-      bookingCounts.set(
-        booking.customerId,
-        (bookingCounts.get(booking.customerId) || 0) + 1
-      )
-    }
-  }
 
   const customersWithCounts = customers.map((c) => ({
     ...c,
