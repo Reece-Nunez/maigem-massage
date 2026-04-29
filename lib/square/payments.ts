@@ -27,9 +27,14 @@ function bigIntToCents(value: bigint | number | undefined | null): number {
 async function fetchAllPayments(): Promise<AdminPayment[]> {
   const payments: AdminPayment[] = []
 
+  // Square defaults beginTime to "1 year ago" when omitted. We want everything,
+  // so explicitly request a wide range starting 5 years ago.
+  const beginTime = new Date(Date.now() - 5 * 365 * 24 * 60 * 60 * 1000).toISOString()
+
   try {
     for await (const p of await paymentsApi.list({
       locationId: SQUARE_LOCATION_ID,
+      beginTime,
       sortOrder: 'DESC',
       limit: 100,
     })) {
@@ -58,7 +63,10 @@ async function fetchAllPayments(): Promise<AdminPayment[]> {
       })
     }
   } catch (err) {
-    console.error('Error fetching Square payments:', err)
+    // Log full error so /admin/finances surfaces config issues instead of
+    // silently rendering "no data". The diagnostic route at
+    // /api/admin/diagnose-payments returns these errors to the browser.
+    console.error('[square/payments] Error fetching payments:', err)
     return []
   }
 
