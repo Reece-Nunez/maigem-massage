@@ -378,11 +378,10 @@ export default function Home() {
         <div className="max-w-6xl mx-auto flex flex-col items-center gap-4 text-center">
           <div className="flex items-center gap-2 sm:gap-3">
             <Image
-              src="/maigem-logo.png"
+              src="/logo-white.png"
               alt="MaiGem Massage"
               width={80}
               height={80}
-              style={{ filter: 'brightness(0) invert(1)' }}
               className="rounded-full w-8 h-8 sm:w-10 sm:h-10"
             />
             <span className="text-white font-medium text-sm sm:text-base">MaiGem Massage</span>
