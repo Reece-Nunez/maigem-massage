@@ -5,6 +5,7 @@ type EventType =
   | 'booking_completed'
   | 'directions_click'
   | 'contact_form_submit'
+  | 'page_view'
 
 export function trackEvent(
   event_type: EventType,

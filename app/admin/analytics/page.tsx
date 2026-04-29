@@ -40,6 +40,7 @@ export default async function AnalyticsPage() {
     { count: bookings30 },
     { count: bookings90 },
     { data: bookingsByMonth },
+    { data: pageViews30Data },
   ] = await Promise.all([
     supabase
       .from('analytics_events')
@@ -68,6 +69,11 @@ export default async function AnalyticsPage() {
       .from('appointments')
       .select('created_at')
       .gte('created_at', since12mo),
+    supabase
+      .from('analytics_events')
+      .select('source, created_at')
+      .eq('event_type', 'page_view')
+      .gte('created_at', since30),
   ])
 
   const events: EventRow[] = (events30 as EventRow[]) || []
@@ -90,6 +96,19 @@ export default async function AnalyticsPage() {
     if (bucket) bucket.count += 1
   }
   const maxMonth = Math.max(1, ...monthBuckets.map(b => b.count))
+
+  // Page view aggregation (30d)
+  const pageViews = (pageViews30Data as { source: string | null; created_at: string }[]) || []
+  const pageViews7 = pageViews.filter((p) => p.created_at >= since7).length
+  const pageViewsByPath = pageViews.reduce<Record<string, number>>((acc, p) => {
+    const path = p.source || '/'
+    acc[path] = (acc[path] || 0) + 1
+    return acc
+  }, {})
+  const topPages = Object.entries(pageViewsByPath)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 8)
+  const maxPageViews = Math.max(1, ...topPages.map(([, c]) => c))
 
   const countByType = (rows: EventRow[]) =>
     rows.reduce<Record<string, number>>((acc, r) => {
@@ -118,6 +137,15 @@ export default async function AnalyticsPage() {
       </p>
 
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 mb-6 sm:mb-8">
+        <Card className="p-3 sm:p-6 col-span-2 lg:col-span-3 bg-primary/5 border-primary/30">
+          <p className="text-text-muted text-xs sm:text-sm">Page Views</p>
+          <p className="text-2xl sm:text-4xl font-bold mt-1 sm:mt-2 text-primary">
+            {pageViews.length}
+          </p>
+          <p className="text-xs text-text-muted mt-1">
+            {pageViews7} in last 7 days · across {Object.keys(pageViewsByPath).length} pages
+          </p>
+        </Card>
         {types.map((type) => (
           <Link
             key={type}
@@ -150,6 +178,32 @@ export default async function AnalyticsPage() {
           </Card>
         </Link>
       </div>
+
+      {topPages.length > 0 && (
+        <Card className="p-4 sm:p-6 mb-6 sm:mb-8">
+          <h3 className="text-base sm:text-lg font-bold text-foreground mb-4">
+            Top Pages (Last 30 Days)
+          </h3>
+          <div className="space-y-2">
+            {topPages.map(([path, count]) => (
+              <div key={path} className="flex items-center gap-3 text-sm">
+                <span className="w-32 sm:w-48 text-foreground text-xs truncate flex-shrink-0">
+                  {path}
+                </span>
+                <div className="flex-1 bg-secondary/20 rounded-full h-6 overflow-hidden">
+                  <div
+                    className="bg-primary h-full rounded-full transition-all"
+                    style={{ width: `${(count / maxPageViews) * 100}%` }}
+                  />
+                </div>
+                <span className="w-10 text-right text-foreground font-medium text-xs flex-shrink-0">
+                  {count}
+                </span>
+              </div>
+            ))}
+          </div>
+        </Card>
+      )}
 
       <h2 className="text-lg sm:text-xl font-bold text-foreground mb-3 sm:mb-4">Historical (Website)</h2>
       <p className="text-text-muted text-xs sm:text-sm mb-4">

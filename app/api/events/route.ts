@@ -11,6 +11,7 @@ const eventSchema = z.object({
     'booking_completed',
     'directions_click',
     'contact_form_submit',
+    'page_view',
   ]),
   source: z.string().max(50).optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),

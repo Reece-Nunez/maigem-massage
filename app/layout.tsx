@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
 import { Analytics } from "@vercel/analytics/next";
+import { PageViewTracker } from "@/components/analytics/page-view-tracker";
 import "./globals.css";
 
 const alta = localFont({
@@ -24,6 +25,7 @@ export default function RootLayout({
         className={`${alta.variable} ${alta.className} antialiased`}
       >
         {children}
+        <PageViewTracker />
         <Analytics />
       </body>
     </html>
