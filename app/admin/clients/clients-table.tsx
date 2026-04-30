@@ -3,7 +3,7 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { Card } from '@/components/ui/card'
-import { format, subDays, formatDistanceToNow } from 'date-fns'
+import { format, formatDistanceToNow } from 'date-fns'
 import type { AdminCustomer } from '@/lib/square/admin'
 
 type EnrichedCustomer = AdminCustomer & {
@@ -12,40 +12,18 @@ type EnrichedCustomer = AdminCustomer & {
   nextVisit: string | null
 }
 
-const RANGES = [
-  { key: '30', label: 'Active in 30d', days: 30 },
-  { key: '90', label: 'Active in 90d', days: 90 },
-  { key: '365', label: 'Active in 1yr', days: 365 },
-  { key: 'all', label: 'All clients', days: null as number | null },
-] as const
-
 interface Props {
   customers: EnrichedCustomer[]
 }
 
 export function ClientsTable({ customers }: Props) {
   const [search, setSearch] = useState('')
-  const [rangeKey, setRangeKey] = useState<(typeof RANGES)[number]['key']>('all')
   const [sortBy, setSortBy] = useState<'recent_visit' | 'name' | 'bookings' | 'joined'>('recent_visit')
 
   const filtered = useMemo(() => {
-    const range = RANGES.find((r) => r.key === rangeKey)!
-    const cutoff =
-      range.days !== null ? subDays(new Date(), range.days) : null
     const q = search.trim().toLowerCase()
 
     let result = customers.filter((c) => {
-      // Date filter — by recent activity (last visit OR upcoming visit)
-      // rather than sign-up date so long-time loyal clients aren't hidden.
-      if (cutoff) {
-        const hasRecentVisit =
-          c.lastVisit && new Date(c.lastVisit) >= cutoff
-        const hasUpcomingVisit =
-          c.nextVisit && new Date(c.nextVisit) >= new Date()
-        if (!hasRecentVisit && !hasUpcomingVisit) return false
-      }
-
-      // Search filter
       if (q) {
         const haystack = [
           c.firstName,
@@ -58,7 +36,6 @@ export function ClientsTable({ customers }: Props) {
           .toLowerCase()
         if (!haystack.includes(q)) return false
       }
-
       return true
     })
 
@@ -85,7 +62,7 @@ export function ClientsTable({ customers }: Props) {
     }
 
     return result
-  }, [customers, search, rangeKey, sortBy])
+  }, [customers, search, sortBy])
 
   return (
     <div>
@@ -122,22 +99,6 @@ export function ClientsTable({ customers }: Props) {
           <option value="name">Sort: Name (A→Z)</option>
           <option value="joined">Sort: Newest joined</option>
         </select>
-      </div>
-
-      <div className="flex flex-wrap gap-2 mb-4 sm:mb-6">
-        {RANGES.map((r) => (
-          <button
-            key={r.key}
-            onClick={() => setRangeKey(r.key)}
-            className={`px-3 py-1.5 rounded-full text-sm transition-colors ${
-              rangeKey === r.key
-                ? 'bg-primary text-white'
-                : 'bg-secondary/30 text-foreground hover:bg-secondary/50'
-            }`}
-          >
-            {r.label}
-          </button>
-        ))}
       </div>
 
       <p className="text-text-muted text-sm mb-4">
