@@ -10,9 +10,11 @@ import type { SquareService } from '@/lib/square/types'
 
 interface InitialAppointment {
   appointmentId: string
-  customerName: string
-  customerEmail: string | null
-  customerPhone: string | null
+  squareCustomerId: string | null
+  customerFirstName: string
+  customerLastName: string
+  customerEmail: string
+  customerPhone: string
   serviceId: string | null
   serviceName: string
   date: string
@@ -36,6 +38,10 @@ export function EditAppointmentForm({ services, initial }: Props) {
   const [date, setDate] = useState(initial.date)
   const [time, setTime] = useState(initial.time)
   const [notes, setNotes] = useState(initial.notes)
+  const [firstName, setFirstName] = useState(initial.customerFirstName)
+  const [lastName, setLastName] = useState(initial.customerLastName)
+  const [email, setEmail] = useState(initial.customerEmail)
+  const [phone, setPhone] = useState(initial.customerPhone)
 
   const selectedService = services.find((s) => s.id === serviceId)
 
@@ -45,6 +51,9 @@ export function EditAppointmentForm({ services, initial }: Props) {
 
     if (!serviceId) return setError('Pick a service')
     if (!date || !time) return setError('Date and time required')
+    if (!firstName || !lastName || !email || !phone) {
+      return setError('Customer name, email, and phone are required')
+    }
 
     const formData = new FormData()
     formData.set('appointmentId', initial.appointmentId)
@@ -52,6 +61,13 @@ export function EditAppointmentForm({ services, initial }: Props) {
     formData.set('date', date)
     formData.set('time', time)
     formData.set('notes', notes)
+    formData.set('first_name', firstName)
+    formData.set('last_name', lastName)
+    formData.set('email', email)
+    formData.set('phone', phone)
+    if (initial.squareCustomerId) {
+      formData.set('square_customer_id', initial.squareCustomerId)
+    }
 
     startTransition(async () => {
       const result = await updateAdminAppointment(formData)
@@ -67,16 +83,37 @@ export function EditAppointmentForm({ services, initial }: Props) {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <Card className="p-4 sm:p-6">
-        <h2 className="text-lg font-bold text-foreground mb-2">Customer</h2>
-        <p className="text-foreground font-medium">{initial.customerName}</p>
-        {initial.customerEmail && (
-          <p className="text-sm text-text-muted">{initial.customerEmail}</p>
-        )}
-        {initial.customerPhone && (
-          <p className="text-sm text-text-muted">{initial.customerPhone}</p>
-        )}
+        <h2 className="text-lg font-bold text-foreground mb-4">Customer</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <Input
+            label="First name"
+            value={firstName}
+            onChange={(e) => setFirstName(e.target.value)}
+            required
+          />
+          <Input
+            label="Last name"
+            value={lastName}
+            onChange={(e) => setLastName(e.target.value)}
+            required
+          />
+          <Input
+            type="email"
+            label="Email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
+          />
+          <Input
+            type="tel"
+            label="Phone"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            required
+          />
+        </div>
         <p className="text-xs text-text-muted mt-3">
-          To change the customer, cancel this appointment and create a new one.
+          Changes to name, email, or phone will update the customer record in Square.
         </p>
       </Card>
 

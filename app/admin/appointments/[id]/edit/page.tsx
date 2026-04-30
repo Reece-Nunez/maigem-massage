@@ -13,9 +13,11 @@ export const dynamic = 'force-dynamic'
 
 interface ResolvedAppointment {
   appointmentId: string
-  customerName: string
-  customerEmail: string | null
-  customerPhone: string | null
+  squareCustomerId: string | null
+  customerFirstName: string
+  customerLastName: string
+  customerEmail: string
+  customerPhone: string
   serviceId: string | null
   serviceName: string
   date: string // yyyy-MM-dd in Central time
@@ -40,9 +42,11 @@ async function resolveAppointment(id: string): Promise<ResolvedAppointment | nul
     const zoned = toZonedTime(new Date(localById.start_datetime), BUSINESS_TIMEZONE)
     return {
       appointmentId: localById.id,
-      customerName: `${localById.client?.first_name || ''} ${localById.client?.last_name || ''}`.trim(),
-      customerEmail: localById.client?.email || null,
-      customerPhone: localById.client?.phone || null,
+      squareCustomerId: localById.client?.square_customer_id || null,
+      customerFirstName: localById.client?.first_name || '',
+      customerLastName: localById.client?.last_name || '',
+      customerEmail: localById.client?.email || '',
+      customerPhone: localById.client?.phone || '',
       serviceId: localById.service_id,
       serviceName: localById.service?.name || 'Unknown',
       date: format(zoned, 'yyyy-MM-dd'),
@@ -64,9 +68,11 @@ async function resolveAppointment(id: string): Promise<ResolvedAppointment | nul
     const zoned = toZonedTime(new Date(localBySquareId.start_datetime), BUSINESS_TIMEZONE)
     return {
       appointmentId: id, // use the Square ID since that's what the URL uses
-      customerName: `${localBySquareId.client?.first_name || ''} ${localBySquareId.client?.last_name || ''}`.trim(),
-      customerEmail: localBySquareId.client?.email || null,
-      customerPhone: localBySquareId.client?.phone || null,
+      squareCustomerId: localBySquareId.client?.square_customer_id || null,
+      customerFirstName: localBySquareId.client?.first_name || '',
+      customerLastName: localBySquareId.client?.last_name || '',
+      customerEmail: localBySquareId.client?.email || '',
+      customerPhone: localBySquareId.client?.phone || '',
       serviceId: localBySquareId.service_id,
       serviceName: localBySquareId.service?.name || 'Unknown',
       date: format(zoned, 'yyyy-MM-dd'),
@@ -87,11 +93,18 @@ async function resolveAppointment(id: string): Promise<ResolvedAppointment | nul
   // Match the Square service back to one of our SquareService entries
   const matchedService = services.find((s) => s.name === squareBooking.serviceName)
 
+  // Split the Square customer name back into first/last
+  const nameParts = squareBooking.customerName.split(' ')
+  const firstName = nameParts[0] || ''
+  const lastName = nameParts.slice(1).join(' ') || ''
+
   return {
     appointmentId: id,
-    customerName: squareBooking.customerName,
-    customerEmail: squareBooking.customerEmail,
-    customerPhone: squareBooking.customerPhone,
+    squareCustomerId: squareBooking.customerId,
+    customerFirstName: firstName,
+    customerLastName: lastName,
+    customerEmail: squareBooking.customerEmail || '',
+    customerPhone: squareBooking.customerPhone || '',
     serviceId: matchedService?.id || null,
     serviceName: squareBooking.serviceName,
     date: format(zoned, 'yyyy-MM-dd'),
@@ -128,7 +141,7 @@ export default async function EditAppointmentPage({
         Edit Appointment
       </h1>
       <p className="text-text-muted text-sm mb-6">
-        {appointment.customerName} ·{' '}
+        {appointment.customerFirstName} {appointment.customerLastName} ·{' '}
         {appointment.syncsToSquare ? (
           <span className="text-primary">Will sync to Square</span>
         ) : (

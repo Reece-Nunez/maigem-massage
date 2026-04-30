@@ -41,3 +41,23 @@ export async function findOrCreateSquareCustomer(data: CustomerData): Promise<st
 
   return newCustomerId
 }
+
+interface UpdateCustomerParams {
+  squareCustomerId: string
+  first_name: string
+  last_name: string
+  email: string
+  phone: string
+}
+
+export async function updateSquareCustomer(
+  params: UpdateCustomerParams
+): Promise<void> {
+  await customersApi.update({
+    customerId: params.squareCustomerId,
+    givenName: params.first_name,
+    familyName: params.last_name,
+    emailAddress: params.email,
+    phoneNumber: params.phone,
+  })
+}
