@@ -30,6 +30,19 @@ const schema = z.object({
 export interface UpdateAdminAppointmentResult {
   ok: boolean
   error?: string
+  warning?: string
+}
+
+// Square Appointments Plus / Premium subscription is required for
+// programmatic booking writes. On the free tier, .update() and .cancel()
+// return 403 FORBIDDEN with this exact merchant subscription message.
+function isSquareSubscriptionError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false
+  const msg = err.message || ''
+  return (
+    msg.includes('Merchant subscription does not support write operations') ||
+    (msg.includes('FORBIDDEN') && msg.includes('subscription'))
+  )
 }
 
 export async function updateAdminAppointment(
@@ -124,14 +137,27 @@ export async function updateAdminAppointment(
     }
 
     // ----- Booking sync to Square -----
+    let squareSubscriptionBlocked = false
     if (squareBookingId) {
-      await updateSquareBooking({
-        bookingId: squareBookingId,
-        startAt,
-        durationMinutes: service.duration_minutes,
-        squareServiceVariationId: service.square_variation_id,
-        customerNote: data.notes || null,
-      })
+      try {
+        await updateSquareBooking({
+          bookingId: squareBookingId,
+          startAt,
+          durationMinutes: service.duration_minutes,
+          squareServiceVariationId: service.square_variation_id,
+          customerNote: data.notes || null,
+        })
+      } catch (err) {
+        if (isSquareSubscriptionError(err)) {
+          // Free Appointments tier — degrade gracefully, update locally only
+          squareSubscriptionBlocked = true
+          console.warn(
+            '[appointments] Square subscription blocks update; saving locally only'
+          )
+        } else {
+          throw err
+        }
+      }
     }
 
     // ----- Mirror to Supabase -----
@@ -235,9 +261,25 @@ export async function updateAdminAppointment(
     }
 
     invalidateAllSquareCache()
+
+    if (squareSubscriptionBlocked) {
+      return {
+        ok: true,
+        warning:
+          'Saved on the website, but Square was not updated. Square Appointments Plus or Premium is required to sync edits to Square. You can still edit this appointment directly in the Square dashboard.',
+      }
+    }
+
     return { ok: true }
   } catch (err: unknown) {
     console.error('updateAdminAppointment failed:', err)
+    if (isSquareSubscriptionError(err)) {
+      return {
+        ok: false,
+        error:
+          'Square Appointments Plus or Premium is required to edit bookings via the API. Upgrade your Square subscription to enable website → Square sync.',
+      }
+    }
     const message = err instanceof Error ? err.message : 'Unknown error'
     return { ok: false, error: message }
   }

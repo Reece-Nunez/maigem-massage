@@ -19,6 +19,7 @@ export function NewAppointmentForm({ services, customers }: Props) {
   const router = useRouter()
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
+  const [warning, setWarning] = useState<string | null>(null)
 
   const [serviceId, setServiceId] = useState(services[0]?.id || '')
   const [date, setDate] = useState(format(new Date(), 'yyyy-MM-dd'))
@@ -105,6 +106,10 @@ export function NewAppointmentForm({ services, customers }: Props) {
       const result = await createAdminAppointment(formData)
       if (!result.ok) {
         setError(result.error || 'Failed to create appointment')
+        return
+      }
+      if (result.warning) {
+        setWarning(result.warning)
         return
       }
       if (result.error) {
@@ -300,6 +305,20 @@ export function NewAppointmentForm({ services, customers }: Props) {
       {error && (
         <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-700">
           {error}
+        </div>
+      )}
+
+      {warning && (
+        <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-900">
+          <p className="font-semibold mb-1">Saved locally</p>
+          <p>{warning}</p>
+          <button
+            type="button"
+            onClick={() => router.push('/admin/appointments')}
+            className="mt-2 text-amber-700 underline hover:text-amber-900"
+          >
+            Back to appointments
+          </button>
         </div>
       )}
 

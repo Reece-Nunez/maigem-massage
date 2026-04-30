@@ -26,7 +26,20 @@ const schema = z.object({
 export interface CreateAdminAppointmentResult {
   ok: boolean
   error?: string
+  warning?: string
   bookingId?: string
+}
+
+// Square Appointments Plus / Premium subscription is required for
+// programmatic booking writes. On the free tier, .create()/.update()/.cancel()
+// return 403 FORBIDDEN with this exact merchant subscription message.
+function isSquareSubscriptionError(err: unknown): boolean {
+  if (!(err instanceof Error)) return false
+  const msg = err.message || ''
+  return (
+    msg.includes('Merchant subscription does not support write operations') ||
+    (msg.includes('FORBIDDEN') && msg.includes('subscription'))
+  )
 }
 
 export async function createAdminAppointment(
@@ -75,14 +88,28 @@ export async function createAdminAppointment(
     if (!service.square_variation_id) {
       return { ok: false, error: 'Service is missing Square variation ID' }
     }
-    const squareBookingId = await createSquareBooking({
-      squareCustomerId,
-      squareServiceVariationId: service.square_variation_id,
-      startAt,
-      durationMinutes: service.duration_minutes,
-    })
 
-    if (!squareBookingId) {
+    let squareBookingId: string | null = null
+    let squareSubscriptionBlocked = false
+    try {
+      squareBookingId = await createSquareBooking({
+        squareCustomerId,
+        squareServiceVariationId: service.square_variation_id,
+        startAt,
+        durationMinutes: service.duration_minutes,
+      })
+    } catch (err) {
+      if (isSquareSubscriptionError(err)) {
+        squareSubscriptionBlocked = true
+        console.warn(
+          '[appointments] Square subscription blocks create; saving locally only'
+        )
+      } else {
+        throw err
+      }
+    }
+
+    if (!squareSubscriptionBlocked && !squareBookingId) {
       return { ok: false, error: 'Square did not return a booking ID' }
     }
 
@@ -140,7 +167,7 @@ export async function createAdminAppointment(
         invalidateAllSquareCache()
         return {
           ok: true,
-          bookingId: squareBookingId,
+          bookingId: squareBookingId || undefined,
           error: 'Booking created in Square but client record could not be saved locally',
         }
       }
@@ -152,7 +179,9 @@ export async function createAdminAppointment(
       service_id: service.id,
       start_datetime: startAt,
       end_datetime: endAt,
-      status: 'confirmed',
+      // Without Square sync we keep it pending so it appears in the admin
+      // queue and Crystal can mirror it manually in Square if needed.
+      status: squareSubscriptionBlocked ? 'pending' : 'confirmed',
       client_notes: data.notes || null,
       cancellation_token: uuidv4(),
       square_booking_id: squareBookingId,
@@ -176,9 +205,24 @@ export async function createAdminAppointment(
 
     invalidateAllSquareCache()
 
-    return { ok: true, bookingId: squareBookingId }
+    if (squareSubscriptionBlocked) {
+      return {
+        ok: true,
+        warning:
+          'Saved on the website, but the booking was not created in Square. Square Appointments Plus or Premium is required to push bookings to Square. You will need to add this appointment manually in the Square dashboard.',
+      }
+    }
+
+    return { ok: true, bookingId: squareBookingId || undefined }
   } catch (err: unknown) {
     console.error('createAdminAppointment failed:', err)
+    if (isSquareSubscriptionError(err)) {
+      return {
+        ok: false,
+        error:
+          'Square Appointments Plus or Premium is required to create bookings via the API. Upgrade your Square subscription to enable website → Square sync.',
+      }
+    }
     const message = err instanceof Error ? err.message : 'Unknown error'
     return { ok: false, error: message }
   }
