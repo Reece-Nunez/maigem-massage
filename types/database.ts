@@ -161,6 +161,7 @@ export type Database = {
           square_payment_id: string | null
           payment_method: 'pay_at_appointment' | 'pay_online'
           payment_status: 'unpaid' | 'paid' | 'refunded' | 'failed'
+          post_appointment_email_sent: boolean
           created_at: string
           updated_at: string
         }
@@ -180,6 +181,7 @@ export type Database = {
           square_payment_id?: string | null
           payment_method?: 'pay_at_appointment' | 'pay_online'
           payment_status?: 'unpaid' | 'paid' | 'refunded' | 'failed'
+          post_appointment_email_sent?: boolean
           created_at?: string
           updated_at?: string
         }
@@ -199,6 +201,7 @@ export type Database = {
           square_payment_id?: string | null
           payment_method?: 'pay_at_appointment' | 'pay_online'
           payment_status?: 'unpaid' | 'paid' | 'refunded' | 'failed'
+          post_appointment_email_sent?: boolean
           created_at?: string
           updated_at?: string
         }

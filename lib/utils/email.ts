@@ -553,6 +553,94 @@ export async function sendAddToSquareReminder({
   }
 }
 
+// 6. Email sent to CLIENT a few hours after their appointment ends —
+// thanks them for visiting and asks for a Google review. Only sent once per
+// appointment (tracked via appointments.post_appointment_email_sent).
+const GOOGLE_REVIEW_URL = 'https://share.google/PWuia43uCOktqPkzO'
+
+export async function sendThankYouEmail({
+  appointment,
+  service,
+  client,
+}: EmailParams) {
+  const startDate = new Date(appointment.start_datetime)
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Thank you for visiting MaiGem Massage</title>
+</head>
+<body style="${baseStyles.body}">
+  <div style="${baseStyles.header}">
+    <h1 style="${baseStyles.title}">MaiGem Massage</h1>
+    <p style="${baseStyles.subtitle}">Thank you for your visit</p>
+  </div>
+
+  <div style="${baseStyles.card}">
+    <p style="margin: 0 0 16px 0; color: #2d2d2d; font-size: 16px;">
+      Hi ${client.first_name},
+    </p>
+    <p style="margin: 0 0 16px 0; color: #2d2d2d;">
+      Thank you so much for visiting MaiGem Massage on
+      <strong>${format(startDate, 'EEEE, MMMM d')}</strong>. It was a pleasure
+      working with you, and I hope you're feeling relaxed and restored.
+    </p>
+    <p style="margin: 0; color: #2d2d2d;">
+      If you enjoyed your <strong>${service.name}</strong> session, the
+      single best way to support a small local business is by leaving a
+      quick Google review. It only takes a minute and it helps other clients
+      in Ponca City find me.
+    </p>
+  </div>
+
+  <div style="text-align: center; margin: 32px 0;">
+    <a href="${GOOGLE_REVIEW_URL}"
+       style="${baseStyles.button} ${baseStyles.primaryButton}; font-size: 16px;">
+      ⭐ Leave a Google Review
+    </a>
+  </div>
+
+  <div style="${baseStyles.card}; background: #fff8e1; border: 1px solid #ffe082;">
+    <p style="margin: 0; color: #5d4037;">
+      <strong>Ready for your next session?</strong>
+    </p>
+    <p style="margin: 12px 0 0 0; color: #5d4037;">
+      Most clients feel best with regular sessions every 3–4 weeks.
+      <a href="https://www.maigemassage.com/book" style="color: #7c9885;">
+        Book your next appointment online
+      </a>
+      whenever you're ready.
+    </p>
+  </div>
+
+  ${getFooterHtml()}
+</body>
+</html>
+  `
+
+  try {
+    const { data, error } = await resend.emails.send({
+      from: 'MaiGem Massage <onboarding@resend.dev>',
+      to: client.email,
+      subject: `Thank you, ${client.first_name}! How was your massage?`,
+      html,
+    })
+
+    if (error) {
+      console.error('Error sending thank-you email:', error)
+      return { success: false, error }
+    }
+
+    return { success: true, data }
+  } catch (error) {
+    console.error('Error sending thank-you email:', error)
+    return { success: false, error }
+  }
+}
+
 // Keep the old function for backwards compatibility (can be removed later)
 export async function sendConfirmationEmail(params: EmailParams) {
   return sendApprovalEmail(params)
