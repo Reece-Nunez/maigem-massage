@@ -3,39 +3,46 @@
 import { useMemo, useState } from 'react'
 import Link from 'next/link'
 import { Card } from '@/components/ui/card'
-import { format, subDays } from 'date-fns'
+import { format, subDays, formatDistanceToNow } from 'date-fns'
 import type { AdminCustomer } from '@/lib/square/admin'
 
-type CustomerWithCount = AdminCustomer & { bookingCount: number }
+type EnrichedCustomer = AdminCustomer & {
+  bookingCount: number
+  lastVisit: string | null
+  nextVisit: string | null
+}
 
 const RANGES = [
-  { key: '30', label: 'Last 30 days', days: 30 },
-  { key: '90', label: 'Last 90 days', days: 90 },
-  { key: '365', label: 'Last year', days: 365 },
-  { key: 'all', label: 'All time', days: null as number | null },
+  { key: '30', label: 'Active in 30d', days: 30 },
+  { key: '90', label: 'Active in 90d', days: 90 },
+  { key: '365', label: 'Active in 1yr', days: 365 },
+  { key: 'all', label: 'All clients', days: null as number | null },
 ] as const
 
 interface Props {
-  customers: CustomerWithCount[]
+  customers: EnrichedCustomer[]
 }
 
 export function ClientsTable({ customers }: Props) {
   const [search, setSearch] = useState('')
-  const [rangeKey, setRangeKey] = useState<(typeof RANGES)[number]['key']>('30')
-  const [sortBy, setSortBy] = useState<'recent' | 'name' | 'bookings'>('recent')
+  const [rangeKey, setRangeKey] = useState<(typeof RANGES)[number]['key']>('all')
+  const [sortBy, setSortBy] = useState<'recent_visit' | 'name' | 'bookings' | 'joined'>('recent_visit')
 
   const filtered = useMemo(() => {
-    const range = RANGES.find(r => r.key === rangeKey)!
+    const range = RANGES.find((r) => r.key === rangeKey)!
     const cutoff =
       range.days !== null ? subDays(new Date(), range.days) : null
     const q = search.trim().toLowerCase()
 
     let result = customers.filter((c) => {
-      // Date filter
-      if (cutoff && c.createdAt) {
-        if (new Date(c.createdAt) < cutoff) return false
-      } else if (cutoff && !c.createdAt) {
-        return false
+      // Date filter — by recent activity (last visit OR upcoming visit)
+      // rather than sign-up date so long-time loyal clients aren't hidden.
+      if (cutoff) {
+        const hasRecentVisit =
+          c.lastVisit && new Date(c.lastVisit) >= cutoff
+        const hasUpcomingVisit =
+          c.nextVisit && new Date(c.nextVisit) >= new Date()
+        if (!hasRecentVisit && !hasUpcomingVisit) return false
       }
 
       // Search filter
@@ -61,8 +68,21 @@ export function ClientsTable({ customers }: Props) {
       )
     } else if (sortBy === 'bookings') {
       result = [...result].sort((a, b) => b.bookingCount - a.bookingCount)
+    } else if (sortBy === 'joined') {
+      result = [...result].sort((a, b) => {
+        const aT = a.createdAt ? new Date(a.createdAt).getTime() : 0
+        const bT = b.createdAt ? new Date(b.createdAt).getTime() : 0
+        return bT - aT
+      })
+    } else {
+      // recent_visit (default): most recent visit first; clients without
+      // any visits sink to the bottom.
+      result = [...result].sort((a, b) => {
+        const aT = a.lastVisit ? new Date(a.lastVisit).getTime() : 0
+        const bT = b.lastVisit ? new Date(b.lastVisit).getTime() : 0
+        return bT - aT
+      })
     }
-    // 'recent' is the default sort from the server (createdAt desc)
 
     return result
   }, [customers, search, rangeKey, sortBy])
@@ -97,9 +117,10 @@ export function ClientsTable({ customers }: Props) {
           onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
           className="px-3 py-2.5 rounded-xl border border-secondary/50 bg-white text-foreground focus:outline-none focus:ring-2 focus:ring-primary/40 focus:border-primary"
         >
-          <option value="recent">Sort: Newest</option>
-          <option value="name">Sort: Name (A→Z)</option>
+          <option value="recent_visit">Sort: Most recent visit</option>
           <option value="bookings">Sort: Most appointments</option>
+          <option value="name">Sort: Name (A→Z)</option>
+          <option value="joined">Sort: Newest joined</option>
         </select>
       </div>
 
@@ -142,7 +163,10 @@ export function ClientsTable({ customers }: Props) {
                     Appts
                   </th>
                   <th className="text-left px-4 sm:px-6 py-3 sm:py-4 text-sm font-semibold text-foreground hidden lg:table-cell">
-                    Joined
+                    Last Visit
+                  </th>
+                  <th className="text-left px-4 sm:px-6 py-3 sm:py-4 text-sm font-semibold text-foreground hidden lg:table-cell">
+                    Next Visit
                   </th>
                   <th className="text-left px-4 sm:px-6 py-3 sm:py-4 text-sm font-semibold text-foreground">
                     Actions
@@ -150,68 +174,89 @@ export function ClientsTable({ customers }: Props) {
                 </tr>
               </thead>
               <tbody className="divide-y divide-secondary/30">
-                {filtered.map((customer) => (
-                  <tr key={customer.id} className="hover:bg-secondary/10 transition-colors">
-                    <td className="px-4 sm:px-6 py-3 sm:py-4">
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold flex-shrink-0">
-                          {customer.firstName?.[0]}
-                          {customer.lastName?.[0]}
-                        </div>
-                        <div className="min-w-0">
-                          <div className="font-medium text-foreground truncate">
-                            {customer.firstName} {customer.lastName}
+                {filtered.map((customer) => {
+                  const lastVisitDate = customer.lastVisit
+                    ? new Date(customer.lastVisit)
+                    : null
+                  const nextVisitDate = customer.nextVisit
+                    ? new Date(customer.nextVisit)
+                    : null
+                  return (
+                    <tr key={customer.id} className="hover:bg-secondary/10 transition-colors">
+                      <td className="px-4 sm:px-6 py-3 sm:py-4">
+                        <div className="flex items-center gap-3">
+                          <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold flex-shrink-0">
+                            {customer.firstName?.[0]}
+                            {customer.lastName?.[0]}
                           </div>
-                          <div className="md:hidden text-xs text-text-muted truncate">
-                            {customer.email || customer.phone || '—'}
+                          <div className="min-w-0">
+                            <div className="font-medium text-foreground truncate">
+                              {customer.firstName} {customer.lastName}
+                            </div>
+                            <div className="md:hidden text-xs text-text-muted truncate">
+                              {customer.email || customer.phone || '—'}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-text-muted hidden md:table-cell">
-                      {customer.email ? (
-                        <a
-                          href={`mailto:${customer.email}`}
-                          className="hover:text-primary transition-colors"
+                      </td>
+                      <td className="px-4 sm:px-6 py-3 sm:py-4 text-text-muted hidden md:table-cell">
+                        {customer.email ? (
+                          <a
+                            href={`mailto:${customer.email}`}
+                            className="hover:text-primary transition-colors"
+                          >
+                            {customer.email}
+                          </a>
+                        ) : (
+                          <span className="text-text-muted/50">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 sm:px-6 py-3 sm:py-4 text-text-muted hidden md:table-cell">
+                        {customer.phone ? (
+                          <a
+                            href={`tel:${customer.phone}`}
+                            className="hover:text-primary transition-colors"
+                          >
+                            {customer.phone}
+                          </a>
+                        ) : (
+                          <span className="text-text-muted/50">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 sm:px-6 py-3 sm:py-4">
+                        <span className="px-2 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium">
+                          {customer.bookingCount}
+                        </span>
+                      </td>
+                      <td className="px-4 sm:px-6 py-3 sm:py-4 text-text-muted text-sm hidden lg:table-cell">
+                        {lastVisitDate ? (
+                          <span title={format(lastVisitDate, 'MMM d, yyyy')}>
+                            {formatDistanceToNow(lastVisitDate, { addSuffix: true })}
+                          </span>
+                        ) : (
+                          <span className="text-text-muted/50">Never</span>
+                        )}
+                      </td>
+                      <td className="px-4 sm:px-6 py-3 sm:py-4 text-text-muted text-sm hidden lg:table-cell">
+                        {nextVisitDate ? (
+                          <span className="text-primary" title={format(nextVisitDate, 'MMM d, yyyy h:mm a')}>
+                            {format(nextVisitDate, 'MMM d')}
+                          </span>
+                        ) : (
+                          <span className="text-text-muted/50">—</span>
+                        )}
+                      </td>
+                      <td className="px-4 sm:px-6 py-3 sm:py-4">
+                        <Link
+                          href={`/admin/clients/${customer.id}`}
+                          className="text-primary hover:underline text-sm whitespace-nowrap"
                         >
-                          {customer.email}
-                        </a>
-                      ) : (
-                        <span className="text-text-muted/50">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-text-muted hidden md:table-cell">
-                      {customer.phone ? (
-                        <a
-                          href={`tel:${customer.phone}`}
-                          className="hover:text-primary transition-colors"
-                        >
-                          {customer.phone}
-                        </a>
-                      ) : (
-                        <span className="text-text-muted/50">—</span>
-                      )}
-                    </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4">
-                      <span className="px-2 py-1 bg-primary/10 text-primary rounded-full text-sm font-medium">
-                        {customer.bookingCount}
-                      </span>
-                    </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4 text-text-muted text-sm hidden lg:table-cell">
-                      {customer.createdAt
-                        ? format(new Date(customer.createdAt), 'MMM d, yyyy')
-                        : '—'}
-                    </td>
-                    <td className="px-4 sm:px-6 py-3 sm:py-4">
-                      <Link
-                        href={`/admin/clients/${customer.id}`}
-                        className="text-primary hover:underline text-sm whitespace-nowrap"
-                      >
-                        View
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
+                          View
+                        </Link>
+                      </td>
+                    </tr>
+                  )
+                })}
               </tbody>
             </table>
           </div>
