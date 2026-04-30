@@ -354,7 +354,7 @@ export default async function FinancesPage({
             Based on confirmed bookings · fees estimated at 2.6% + 10¢
           </p>
         </div>
-        <div className={`grid grid-cols-1 ${projFilter ? 'md:grid-cols-2' : ''} gap-4`}>
+        <div className={`grid grid-cols-1 ${projFilter ? 'md:grid-cols-3' : ''} gap-4`}>
           {projFilter && (
             <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
               <p className="text-xs text-text-muted">
@@ -375,6 +375,20 @@ export default async function FinancesPage({
                   {projFilter.unpriced} without a listed price
                 </p>
               )}
+            </div>
+          )}
+          {projFilter && (
+            <div className="p-4 rounded-xl bg-accent/10 border border-accent/40">
+              <p className="text-xs text-text-muted">
+                Total {primary.label.toLowerCase()}{' '}
+                <span className="text-text-muted/60">(earned + projected)</span>
+              </p>
+              <p className="text-2xl sm:text-3xl font-bold text-accent mt-1">
+                {formatCents(cur.net + projFilter.net)}
+              </p>
+              <p className="text-xs text-text-muted mt-1">
+                {formatCents(cur.net)} earned + {formatCents(projFilter.net)} projected
+              </p>
             </div>
           )}
           <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
