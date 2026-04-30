@@ -378,7 +378,7 @@ export default function Home() {
         <div className="max-w-6xl mx-auto flex flex-col items-center gap-4 text-center">
           <div className="flex items-center gap-2 sm:gap-3">
             <Image
-              src="/logo-white.png"
+              src="/maigem-logo.png"
               alt="MaiGem Massage"
               width={80}
               height={80}
