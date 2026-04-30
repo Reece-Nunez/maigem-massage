@@ -1,12 +1,19 @@
 import { createClient } from '@/lib/supabase/server'
 import { Card } from '@/components/ui/card'
-import { format } from 'date-fns'
+import { format, isToday, isTomorrow, isYesterday } from 'date-fns'
 import { toZonedTime } from 'date-fns-tz'
 import { AppointmentActions } from './appointment-actions'
 import { getSquareBookings } from '@/lib/square/admin'
 import type { Appointment, Client, Service } from '@/types/database'
 
 const BUSINESS_TIMEZONE = 'America/Chicago'
+
+function dayHeader(zonedDate: Date): string {
+  if (isToday(zonedDate)) return 'TODAY'
+  if (isTomorrow(zonedDate)) return 'TOMORROW'
+  if (isYesterday(zonedDate)) return 'YESTERDAY'
+  return format(zonedDate, 'EEEE, MMMM d').toUpperCase()
+}
 
 type AppointmentWithRelations = Appointment & {
   client: Client | null
@@ -159,96 +166,116 @@ export default async function AppointmentsPage({
         ))}
       </div>
 
-      {/* Appointments List */}
-      <Card className="overflow-hidden">
-        {displayAppointments.length > 0 ? (
-          <div className="divide-y divide-secondary/30">
-            {displayAppointments.map((appointment) => {
-              const startDate = toZonedTime(
-                new Date(appointment.startAt),
-                BUSINESS_TIMEZONE
-              )
-              const endDate = toZonedTime(
-                new Date(appointment.endAt),
-                BUSINESS_TIMEZONE
-              )
+      {/* Appointments List — grouped by day */}
+      <Card className="overflow-hidden p-0">
+        {displayAppointments.length > 0 ? (() => {
+          // Group appointments by day key (yyyy-MM-dd in business timezone)
+          const groups = new Map<string, { zoned: Date; items: typeof displayAppointments }>()
+          for (const appt of displayAppointments) {
+            const zoned = toZonedTime(new Date(appt.startAt), BUSINESS_TIMEZONE)
+            const key = format(zoned, 'yyyy-MM-dd')
+            if (!groups.has(key)) {
+              groups.set(key, { zoned, items: [] })
+            }
+            groups.get(key)!.items.push(appt)
+          }
 
-              return (
-                <div
-                  key={appointment.id}
-                  className="p-6 hover:bg-secondary/10 transition-colors"
-                >
-                  <div className="flex items-start justify-between">
-                    <div className="flex gap-4">
-                      <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold text-lg">
-                        {appointment.customerInitials}
-                      </div>
-                      <div>
-                        <h3 className="font-semibold text-foreground text-lg">
-                          {appointment.customerName}
-                        </h3>
-                        <p className="text-primary font-medium">
-                          {appointment.serviceName}
-                        </p>
-                        <div className="flex items-center gap-4 mt-2 text-sm text-text-muted">
-                          <span>{format(startDate, 'EEEE, MMMM d, yyyy')}</span>
-                          <span>
-                            {format(startDate, 'h:mm a')} - {format(endDate, 'h:mm a')}
-                          </span>
-                        </div>
-                        {appointment.notes && (
-                          <p className="mt-2 text-sm text-text-muted bg-secondary/20 p-2 rounded">
-                            <strong>Notes:</strong> {appointment.notes}
-                          </p>
-                        )}
-                      </div>
-                    </div>
+          return (
+            <div>
+              {Array.from(groups.entries()).map(([key, group]) => (
+                <div key={key}>
+                  <div className="bg-secondary/20 px-4 sm:px-6 py-2 border-b border-secondary/30 sticky top-0 z-10">
+                    <h2 className="text-xs font-bold text-text-muted tracking-wider">
+                      {dayHeader(group.zoned)}
+                    </h2>
+                  </div>
+                  <div className="divide-y divide-secondary/30">
+                    {group.items.map((appointment) => {
+                      const startDate = toZonedTime(
+                        new Date(appointment.startAt),
+                        BUSINESS_TIMEZONE
+                      )
+                      const endDate = toZonedTime(
+                        new Date(appointment.endAt),
+                        BUSINESS_TIMEZONE
+                      )
 
-                    <div className="flex items-center gap-4">
-                      <span
-                        className={`px-3 py-1 rounded-full text-sm font-medium ${
-                          appointment.status === 'confirmed'
-                            ? 'bg-green-100 text-green-700'
-                            : appointment.status === 'cancelled'
-                            ? 'bg-red-100 text-red-700'
-                            : appointment.status === 'completed'
-                            ? 'bg-blue-100 text-blue-700'
-                            : appointment.status === 'no_show'
-                            ? 'bg-gray-100 text-gray-700'
-                            : 'bg-yellow-100 text-yellow-700'
-                        }`}
-                      >
-                        {appointment.status === 'no_show'
-                          ? 'No Show'
-                          : appointment.status.charAt(0).toUpperCase() +
-                            appointment.status.slice(1)}
-                      </span>
-                      {/* Edit only available for Supabase rows; Square-sourced
-                          bookings are managed in the Square dashboard since
-                          API writes require a paid Appointments tier. */}
-                      {appointment.source === 'supabase' && appointment.status !== 'cancelled' && (
-                        <a
-                          href={`/admin/appointments/${appointment.id}/edit`}
-                          className="px-3 py-1.5 rounded-full text-sm font-medium border border-secondary/60 text-foreground hover:bg-secondary/30 transition-colors whitespace-nowrap"
+                      return (
+                        <div
+                          key={appointment.id}
+                          className="p-4 sm:p-6 hover:bg-secondary/10 transition-colors"
                         >
-                          Edit
-                        </a>
-                      )}
-                      {appointment.source === 'supabase' && (
-                        <AppointmentActions
-                          appointmentId={appointment.id}
-                          currentStatus={appointment.status}
-                          clientEmail={appointment.customerEmail || undefined}
-                          clientPhone={appointment.customerPhone || undefined}
-                        />
-                      )}
-                    </div>
+                          <div className="flex items-start justify-between gap-3 flex-wrap sm:flex-nowrap">
+                            <div className="flex gap-3 sm:gap-4 min-w-0 flex-1">
+                              <div className="w-12 h-12 sm:w-14 sm:h-14 rounded-full bg-primary/10 flex items-center justify-center text-primary font-bold flex-shrink-0">
+                                {appointment.customerInitials}
+                              </div>
+                              <div className="min-w-0">
+                                <div className="flex items-baseline gap-3 flex-wrap">
+                                  <span className="text-sm sm:text-base font-semibold text-foreground whitespace-nowrap">
+                                    {format(startDate, 'h:mm a')} – {format(endDate, 'h:mm a')}
+                                  </span>
+                                </div>
+                                <h3 className="font-semibold text-foreground text-base sm:text-lg mt-0.5 truncate">
+                                  {appointment.customerName}
+                                </h3>
+                                <p className="text-primary font-medium text-sm">
+                                  {appointment.serviceName}
+                                </p>
+                                {appointment.notes && (
+                                  <p className="mt-2 text-sm text-text-muted bg-secondary/20 p-2 rounded italic">
+                                    &ldquo;{appointment.notes}&rdquo;
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+                              <span
+                                className={`px-2.5 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
+                                  appointment.status === 'confirmed'
+                                    ? 'bg-green-100 text-green-700'
+                                    : appointment.status === 'cancelled'
+                                    ? 'bg-red-100 text-red-700'
+                                    : appointment.status === 'completed'
+                                    ? 'bg-blue-100 text-blue-700'
+                                    : appointment.status === 'no_show'
+                                    ? 'bg-gray-100 text-gray-700'
+                                    : 'bg-yellow-100 text-yellow-700'
+                                }`}
+                              >
+                                {appointment.status === 'no_show'
+                                  ? 'No Show'
+                                  : appointment.status.charAt(0).toUpperCase() +
+                                    appointment.status.slice(1)}
+                              </span>
+                              {appointment.source === 'supabase' && appointment.status !== 'cancelled' && (
+                                <a
+                                  href={`/admin/appointments/${appointment.id}/edit`}
+                                  className="px-3 py-1 rounded-full text-xs sm:text-sm font-medium border border-secondary/60 text-foreground hover:bg-secondary/30 transition-colors whitespace-nowrap"
+                                >
+                                  Edit
+                                </a>
+                              )}
+                              {appointment.source === 'supabase' && (
+                                <AppointmentActions
+                                  appointmentId={appointment.id}
+                                  currentStatus={appointment.status}
+                                  clientEmail={appointment.customerEmail || undefined}
+                                  clientPhone={appointment.customerPhone || undefined}
+                                />
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
                   </div>
                 </div>
-              )
-            })}
-          </div>
-        ) : (
+              ))}
+            </div>
+          )
+        })() : (
           <div className="p-12 text-center text-text-muted">
             <p>No appointments found</p>
           </div>
