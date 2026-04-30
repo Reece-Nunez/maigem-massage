@@ -105,10 +105,14 @@ export const viewport: Viewport = {
 
 // LocalBusiness structured data — primary signal for Google to identify the
 // business, address, hours, and services. Also supports rich result eligibility
-// (knowledge panel, "near me" surfaces, etc.).
+// (knowledge panel, "near me" surfaces, etc.). HealthAndBeautyBusiness is
+// recognized by both Google's Rich Results Test and the strict
+// validator.schema.org tool; additionalType narrows further to MassageBusiness
+// for crawlers that understand the more specific subtype.
 const localBusinessSchema = {
   "@context": "https://schema.org",
-  "@type": "MassageBusiness",
+  "@type": ["LocalBusiness", "HealthAndBeautyBusiness"],
+  additionalType: "https://schema.org/MassageBusiness",
   "@id": `${SITE_URL}/#business`,
   name: SITE_NAME,
   alternateName: "MaiGem Massage Therapy",
