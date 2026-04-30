@@ -264,42 +264,55 @@ export default async function FinancesPage({
         )}
       </p>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6 mb-6 sm:mb-8">
-        <Card className="p-3 sm:p-6 border-2 border-primary/30 bg-primary/5">
-          <p className="text-text-muted text-xs sm:text-sm">Net Revenue</p>
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4 mb-6 sm:mb-8">
+        <Card className="p-3 sm:p-5 border-2 border-primary/30 bg-primary/5">
+          <p className="text-text-muted text-xs">Net Revenue</p>
           <div className="flex items-baseline gap-2 flex-wrap mt-1 sm:mt-2">
-            <p className="text-2xl sm:text-3xl font-bold text-primary">
+            <p className="text-xl sm:text-2xl font-bold text-primary">
               {formatCents(cur.net)}
             </p>
             {comparison && <DeltaBadge current={cur.net} previous={prev.net} />}
           </div>
-          {comparison && (
-            <p className="text-xs text-text-muted mt-1">
-              vs {formatCents(prev.net)}
-            </p>
-          )}
-          {!comparison && (
-            <p className="text-xs text-text-muted mt-1">After fees & refunds</p>
-          )}
+          <p className="text-xs text-text-muted mt-1">
+            {comparison
+              ? `vs ${formatCents(prev.net)}`
+              : 'Sales + tips − fees & refunds'}
+          </p>
         </Card>
-        <Card className="p-3 sm:p-6">
-          <p className="text-text-muted text-xs sm:text-sm">Gross Revenue</p>
+        <Card className="p-3 sm:p-5">
+          <p className="text-text-muted text-xs">Sales</p>
           <div className="flex items-baseline gap-2 flex-wrap mt-1 sm:mt-2">
-            <p className="text-2xl sm:text-3xl font-bold text-foreground">
-              {formatCents(cur.gross)}
+            <p className="text-xl sm:text-2xl font-bold text-foreground">
+              {formatCents(cur.amount)}
             </p>
-            {comparison && <DeltaBadge current={cur.gross} previous={prev.gross} />}
+            {comparison && <DeltaBadge current={cur.amount} previous={prev.amount} />}
           </div>
           <p className="text-xs text-text-muted mt-1">
             {comparison
-              ? `vs ${formatCents(prev.gross)}`
-              : `Includes ${formatCents(cur.tip)} in tips`}
+              ? `vs ${formatCents(prev.amount)}`
+              : 'Services only, no tips'}
           </p>
         </Card>
-        <Card className="p-3 sm:p-6 border border-amber-200 bg-amber-50">
-          <p className="text-text-muted text-xs sm:text-sm">Square Fees</p>
+        <Card className="p-3 sm:p-5 border border-emerald-200 bg-emerald-50">
+          <p className="text-text-muted text-xs">Tips</p>
           <div className="flex items-baseline gap-2 flex-wrap mt-1 sm:mt-2">
-            <p className="text-2xl sm:text-3xl font-bold text-amber-700">
+            <p className="text-xl sm:text-2xl font-bold text-emerald-700">
+              {formatCents(cur.tip)}
+            </p>
+            {comparison && <DeltaBadge current={cur.tip} previous={prev.tip} />}
+          </div>
+          <p className="text-xs text-text-muted mt-1">
+            {comparison
+              ? `vs ${formatCents(prev.tip)}`
+              : cur.amount > 0
+              ? `${((cur.tip / cur.amount) * 100).toFixed(1)}% of sales`
+              : '—'}
+          </p>
+        </Card>
+        <Card className="p-3 sm:p-5 border border-amber-200 bg-amber-50">
+          <p className="text-text-muted text-xs">Square Fees</p>
+          <div className="flex items-baseline gap-2 flex-wrap mt-1 sm:mt-2">
+            <p className="text-xl sm:text-2xl font-bold text-amber-700">
               {formatCents(cur.fees)}
             </p>
             {comparison && (
@@ -311,27 +324,24 @@ export default async function FinancesPage({
             )}
           </div>
           <p className="text-xs text-text-muted mt-1">
-            {comparison ? `vs ${formatCents(prev.fees)}` : `${feePercent}% of gross`}
+            {comparison
+              ? `vs ${formatCents(prev.fees)}`
+              : `${feePercent}% of total (incl. tips)`}
           </p>
         </Card>
-        <Card className="p-3 sm:p-6">
-          <p className="text-text-muted text-xs sm:text-sm">Transactions</p>
+        <Card className="p-3 sm:p-5">
+          <p className="text-text-muted text-xs">Transactions</p>
           <div className="flex items-baseline gap-2 flex-wrap mt-1 sm:mt-2">
-            <p className="text-2xl sm:text-3xl font-bold text-foreground">
+            <p className="text-xl sm:text-2xl font-bold text-foreground">
               {cur.count}
             </p>
             {comparison && <DeltaBadge current={cur.count} previous={prev.count} />}
           </div>
           <p className="text-xs text-text-muted mt-1">
             {comparison
-              ? `vs ${prev.count}`
+              ? `vs ${prev.count} · avg ${formatCents(avgTransaction)}`
               : `Avg ${formatCents(avgTransaction)}`}
           </p>
-          {comparison && (
-            <p className="text-xs text-text-muted">
-              Avg {formatCents(avgTransaction)} (vs {formatCents(prevAvgTransaction)})
-            </p>
-          )}
         </Card>
       </div>
 
