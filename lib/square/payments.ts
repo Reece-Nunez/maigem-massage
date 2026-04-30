@@ -35,6 +35,7 @@ async function fetchAllPayments(): Promise<AdminPayment[]> {
     for await (const p of await paymentsApi.list({
       locationId: SQUARE_LOCATION_ID,
       beginTime,
+      sortField: 'CREATED_AT',
       sortOrder: 'DESC',
       limit: 100,
     })) {

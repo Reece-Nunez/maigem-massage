@@ -30,7 +30,10 @@ export async function GET() {
     const noLocationPayments: unknown[] = []
     try {
       let count = 0
-      for await (const p of await paymentsApi.list({ limit: 100 })) {
+      for await (const p of await paymentsApi.list({
+        sortField: 'CREATED_AT',
+        limit: 100,
+      })) {
         if (count < 5) {
           noLocationPayments.push({
             id: p.id,
@@ -60,6 +63,7 @@ export async function GET() {
       let count = 0
       for await (const p of await paymentsApi.list({
         locationId: SQUARE_LOCATION_ID,
+        sortField: 'CREATED_AT',
         limit: 100,
       })) {
         if (count < 5) {
