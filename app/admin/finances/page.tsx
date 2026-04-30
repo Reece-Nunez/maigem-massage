@@ -1,5 +1,5 @@
 import { Card } from '@/components/ui/card'
-import { format, subMonths, addDays, startOfDay } from 'date-fns'
+import { format, subMonths } from 'date-fns'
 import { toZonedTime } from 'date-fns-tz'
 import { getSquarePayments, type AdminPayment } from '@/lib/square/payments'
 import { getSquareBookings } from '@/lib/square/admin'
@@ -185,10 +185,6 @@ export default async function FinancesPage({
     if (s.price_cents != null) serviceByName.set(s.name, s.price_cents)
   }
 
-  const todayStart = startOfDay(now)
-  const next7End = addDays(todayStart, 7)
-  const next30End = addDays(todayStart, 30)
-
   function bookingPrice(serviceName: string): number {
     return serviceByName.get(serviceName) || 0
   }
@@ -201,11 +197,14 @@ export default async function FinancesPage({
   }
 
   const upcomingBookings = allBookings.filter(
-    (b) => b.status === 'confirmed' && new Date(b.startAt) >= todayStart
+    (b) => b.status === 'confirmed' && new Date(b.startAt) >= now
   )
 
-  function projectFor(endDate: Date) {
-    const inWindow = upcomingBookings.filter((b) => new Date(b.startAt) < endDate)
+  function projectInRange(start: Date, end: Date) {
+    const inWindow = upcomingBookings.filter((b) => {
+      const t = new Date(b.startAt).getTime()
+      return t >= start.getTime() && t < end.getTime()
+    })
     let gross = 0
     let fees = 0
     let priced = 0
@@ -214,7 +213,7 @@ export default async function FinancesPage({
       const price = bookingPrice(b.serviceName)
       if (price > 0) {
         gross += price
-        fees += estimateFee(price) // per-booking fee, summed
+        fees += estimateFee(price)
         priced += 1
       } else {
         unpriced += 1
@@ -231,9 +230,14 @@ export default async function FinancesPage({
     }
   }
 
-  const proj7 = projectFor(next7End)
-  const proj30 = projectFor(next30End)
-  const projAll = projectFor(new Date(8.64e15)) // far future = all upcoming
+  // Filter-bound projection: only the future portion of the selected window
+  const filterEndsInFuture = primary.end.getTime() > now.getTime()
+  const projFilter = filterEndsInFuture
+    ? projectInRange(now, primary.end)
+    : null
+
+  // Always-on reference: every confirmed booking from now into the future
+  const projAll = projectInRange(now, new Date(8.64e15))
 
   return (
     <div>
@@ -350,38 +354,29 @@ export default async function FinancesPage({
             Based on confirmed bookings · fees estimated at 2.6% + 10¢
           </p>
         </div>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
-            <p className="text-xs text-text-muted">Next 7 days</p>
-            <p className="text-2xl sm:text-3xl font-bold text-primary mt-1">
-              {formatCents(proj7.net)}
-            </p>
-            <p className="text-xs text-text-muted mt-1">
-              {proj7.count} booking{proj7.count === 1 ? '' : 's'} ·{' '}
-              {formatCents(proj7.gross)} gross
-            </p>
-            {proj7.unpriced > 0 && (
-              <p className="text-xs text-amber-700 mt-1">
-                {proj7.unpriced} booking{proj7.unpriced === 1 ? ' has' : 's have'} no
-                listed price
+        <div className={`grid grid-cols-1 ${projFilter ? 'md:grid-cols-2' : ''} gap-4`}>
+          {projFilter && (
+            <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
+              <p className="text-xs text-text-muted">
+                Remaining in {primary.label.toLowerCase()}{' '}
+                <span className="text-text-muted/60">
+                  (through {format(primary.end, 'MMM d')})
+                </span>
               </p>
-            )}
-          </div>
-          <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
-            <p className="text-xs text-text-muted">Next 30 days</p>
-            <p className="text-2xl sm:text-3xl font-bold text-primary mt-1">
-              {formatCents(proj30.net)}
-            </p>
-            <p className="text-xs text-text-muted mt-1">
-              {proj30.count} booking{proj30.count === 1 ? '' : 's'} ·{' '}
-              {formatCents(proj30.gross)} gross
-            </p>
-            {proj30.unpriced > 0 && (
-              <p className="text-xs text-amber-700 mt-1">
-                {proj30.unpriced} without a listed price
+              <p className="text-2xl sm:text-3xl font-bold text-primary mt-1">
+                {formatCents(projFilter.net)}
               </p>
-            )}
-          </div>
+              <p className="text-xs text-text-muted mt-1">
+                {projFilter.count} booking{projFilter.count === 1 ? '' : 's'} ·{' '}
+                {formatCents(projFilter.gross)} gross
+              </p>
+              {projFilter.unpriced > 0 && (
+                <p className="text-xs text-amber-700 mt-1">
+                  {projFilter.unpriced} without a listed price
+                </p>
+              )}
+            </div>
+          )}
           <div className="p-4 rounded-xl bg-primary/5 border border-primary/20">
             <p className="text-xs text-text-muted">All upcoming</p>
             <p className="text-2xl sm:text-3xl font-bold text-primary mt-1">
@@ -398,6 +393,11 @@ export default async function FinancesPage({
             )}
           </div>
         </div>
+        {!projFilter && (
+          <p className="text-xs text-text-muted mt-3">
+            The selected date range is in the past — only the all-upcoming projection is shown.
+          </p>
+        )}
       </Card>
 
       <Card className="p-4 sm:p-6 mb-6 sm:mb-8">
