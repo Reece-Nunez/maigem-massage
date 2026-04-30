@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { sendApprovalEmail, sendRejectionEmail } from '@/lib/utils/email'
+import {
+  sendApprovalEmail,
+  sendRejectionEmail,
+  sendAddToSquareReminder,
+} from '@/lib/utils/email'
 import { createSquareBooking } from '@/lib/square/bookings'
 import { getSquareServiceById } from '@/lib/square/services'
 
@@ -75,7 +79,11 @@ export async function GET(
       })
     }
 
-    // Sync to Square Bookings on accept
+    // Sync to Square Bookings on accept. If the seller's plan doesn't allow
+    // programmatic writes (free Appointments tier), the create() call fails
+    // and we fall back to emailing Crystal a reminder so she can add it to
+    // her Square calendar manually.
+    let squareSyncSucceeded = false
     if (action === 'accept') {
       try {
         const squareService = await getSquareServiceById(appointment.service_id)
@@ -91,6 +99,7 @@ export async function GET(
               .from('appointments')
               .update({ square_booking_id: squareBookingId })
               .eq('id', id)
+            squareSyncSucceeded = true
           }
         }
       } catch (err) {
@@ -105,6 +114,18 @@ export async function GET(
         service: appointment.service,
         client: appointment.client,
       }).catch(err => console.error('Failed to send approval email:', err))
+
+      // If the booking didn't make it onto Square (subscription block, etc.),
+      // notify the admin to add it manually so it doesn't get missed.
+      if (!squareSyncSucceeded) {
+        sendAddToSquareReminder({
+          appointment: appointment,
+          service: appointment.service,
+          client: appointment.client,
+        }).catch(err =>
+          console.error('Failed to send add-to-Square reminder:', err)
+        )
+      }
     } else {
       sendRejectionEmail({
         appointment: appointment,

@@ -467,6 +467,92 @@ export async function sendRejectionEmail({
   }
 }
 
+// 5. Email sent to ADMIN when a website booking was accepted but did NOT
+// sync to Square (free Appointments tier blocks bookings.create). Reminds
+// Crystal to add it to her Square calendar manually so she doesn't miss it.
+export async function sendAddToSquareReminder({
+  appointment,
+  service,
+  client,
+}: EmailParams) {
+  const startDate = new Date(appointment.start_datetime)
+  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'
+  const squareDashUrl = 'https://squareup.com/dashboard/appointments'
+
+  const html = `
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add to Square Calendar Reminder</title>
+</head>
+<body style="${baseStyles.body}">
+  <div style="${baseStyles.header}">
+    <h1 style="${baseStyles.title}">MaiGem Massage</h1>
+    <p style="${baseStyles.subtitle}">Don't forget to add this to Square</p>
+  </div>
+
+  <div style="${baseStyles.card}; background: #fff8e1; border: 1px solid #ffe082;">
+    <p style="margin: 0; color: #5d4037; font-size: 16px;">
+      A new appointment was just <strong>confirmed on the website</strong> for
+      <strong>${client.first_name} ${client.last_name}</strong>. Because your
+      Square plan doesn't allow programmatic booking, this booking is
+      <strong>not on your Square calendar yet</strong>.
+    </p>
+    <p style="margin: 16px 0 0 0; color: #5d4037;">
+      Open Square and add it manually so you don't miss it.
+    </p>
+  </div>
+
+  ${getAppointmentDetailsHtml(service, startDate)}
+  ${getClientDetailsHtml(client)}
+
+  ${appointment.client_notes ? `
+  <div style="${baseStyles.card}">
+    <h2 style="${baseStyles.cardTitle}">Client Notes</h2>
+    <p style="margin: 0; color: #6b6b6b;">${appointment.client_notes}</p>
+  </div>
+  ` : ''}
+
+  <div style="text-align: center; margin: 32px 0;">
+    <a href="${squareDashUrl}"
+       style="${baseStyles.button} ${baseStyles.primaryButton}">
+      Open Square Appointments
+    </a>
+  </div>
+
+  <div style="${baseStyles.card}">
+    <p style="margin: 0; color: #6b6b6b; font-size: 14px;">
+      View this appointment on your <a href="${siteUrl}/admin/appointments" style="color: #7c9885;">admin dashboard</a>.
+    </p>
+  </div>
+</body>
+</html>
+  `
+
+  try {
+    const adminEmail = await getAdminEmail()
+
+    const { data, error } = await resend.emails.send({
+      from: 'MaiGem Massage <onboarding@resend.dev>',
+      to: adminEmail,
+      subject: `⚠️ Add to Square: ${client.first_name} ${client.last_name} on ${format(startDate, 'MMM d, h:mm a')}`,
+      html,
+    })
+
+    if (error) {
+      console.error('Error sending Square reminder email:', error)
+      return { success: false, error }
+    }
+
+    return { success: true, data }
+  } catch (error) {
+    console.error('Error sending Square reminder email:', error)
+    return { success: false, error }
+  }
+}
+
 // Keep the old function for backwards compatibility (can be removed later)
 export async function sendConfirmationEmail(params: EmailParams) {
   return sendApprovalEmail(params)
