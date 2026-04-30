@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { getSquareCustomers, getSquareBookings } from '@/lib/square/admin'
 import { RefreshSquareButton } from '@/components/admin/refresh-button'
 import { ClientsTable } from './clients-table'
@@ -47,7 +48,18 @@ export default async function ClientsPage() {
     <div>
       <div className="flex items-center justify-between flex-wrap gap-3 mb-2">
         <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Clients</h1>
-        <RefreshSquareButton />
+        <div className="flex items-center gap-2 flex-wrap">
+          <Link
+            href="/admin/clients/duplicates"
+            className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm font-medium border border-secondary/60 text-foreground hover:bg-secondary/30 transition-colors"
+          >
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7v8a2 2 0 002 2h6M8 7V5a2 2 0 012-2h4.586a1 1 0 01.707.293l4.414 4.414a1 1 0 01.293.707V15a2 2 0 01-2 2h-2M8 7H6a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2v-2" />
+            </svg>
+            Find Duplicates
+          </Link>
+          <RefreshSquareButton />
+        </div>
       </div>
       <p className="text-text-muted text-sm mb-6 sm:mb-8">
         {customers.length} total clients from Square

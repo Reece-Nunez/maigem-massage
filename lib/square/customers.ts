@@ -61,3 +61,7 @@ export async function updateSquareCustomer(
     phoneNumber: params.phone,
   })
 }
+
+export async function deleteSquareCustomer(customerId: string): Promise<void> {
+  await customersApi.delete({ customerId })
+}
