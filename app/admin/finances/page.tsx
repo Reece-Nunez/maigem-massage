@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/card'
 import { format, subDays, subMonths, startOfDay, startOfMonth } from 'date-fns'
 import { toZonedTime } from 'date-fns-tz'
 import { getSquarePayments } from '@/lib/square/payments'
+import { RefreshSquareButton } from '@/components/admin/refresh-button'
 
 const BUSINESS_TIMEZONE = 'America/Chicago'
 
@@ -93,7 +94,10 @@ export default async function FinancesPage({
 
   return (
     <div>
-      <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Finances</h1>
+      <div className="flex items-center justify-between flex-wrap gap-3 mb-2">
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Finances</h1>
+        <RefreshSquareButton />
+      </div>
       <p className="text-text-muted text-sm mb-6">
         Revenue, Square fees, and transactions — pulled directly from Square.
       </p>

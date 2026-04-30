@@ -5,6 +5,7 @@ import { toZonedTime } from 'date-fns-tz'
 import Link from 'next/link'
 import { PendingAppointmentActions } from './pending-actions'
 import { getSquareBookings, getSquareCustomers } from '@/lib/square/admin'
+import { RefreshSquareButton } from '@/components/admin/refresh-button'
 import type { Appointment, Client, Service } from '@/types/database'
 
 const BUSINESS_TIMEZONE = 'America/Chicago'
@@ -64,7 +65,10 @@ export default async function AdminDashboard() {
 
   return (
     <div>
-      <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-6 sm:mb-8">Dashboard</h1>
+      <div className="flex items-center justify-between flex-wrap gap-3 mb-6 sm:mb-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Dashboard</h1>
+        <RefreshSquareButton />
+      </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-2 gap-3 sm:gap-6 mb-6 sm:mb-8">

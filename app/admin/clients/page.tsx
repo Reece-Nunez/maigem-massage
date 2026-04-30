@@ -1,4 +1,5 @@
 import { getSquareCustomers, getSquareBookingCountsByCustomer } from '@/lib/square/admin'
+import { RefreshSquareButton } from '@/components/admin/refresh-button'
 import { ClientsTable } from './clients-table'
 
 export const dynamic = 'force-dynamic'
@@ -16,7 +17,10 @@ export default async function ClientsPage() {
 
   return (
     <div>
-      <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Clients</h1>
+      <div className="flex items-center justify-between flex-wrap gap-3 mb-2">
+        <h1 className="text-2xl sm:text-3xl font-bold text-foreground">Clients</h1>
+        <RefreshSquareButton />
+      </div>
       <p className="text-text-muted text-sm mb-6 sm:mb-8">
         {customers.length} total clients from Square
       </p>
