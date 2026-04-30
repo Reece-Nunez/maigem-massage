@@ -207,18 +207,19 @@ export default async function FinancesPage({
   function projectFor(endDate: Date) {
     const inWindow = upcomingBookings.filter((b) => new Date(b.startAt) < endDate)
     let gross = 0
+    let fees = 0
     let priced = 0
     let unpriced = 0
     for (const b of inWindow) {
       const price = bookingPrice(b.serviceName)
       if (price > 0) {
         gross += price
+        fees += estimateFee(price) // per-booking fee, summed
         priced += 1
       } else {
         unpriced += 1
       }
     }
-    const fees = estimateFee(gross) * priced // fee is per-transaction
     const net = gross - fees
     return {
       count: inWindow.length,
