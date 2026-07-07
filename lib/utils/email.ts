@@ -556,7 +556,9 @@ export async function sendAddToSquareReminder({
 // 6. Email sent to CLIENT a few hours after their appointment ends —
 // thanks them for visiting and asks for a Google review. Only sent once per
 // appointment (tracked via appointments.post_appointment_email_sent).
-const GOOGLE_REVIEW_URL = 'https://share.google/PWuia43uCOktqPkzO'
+// Canonical Google "leave a review" deep link — opens the star-rating dialog
+// directly for MaiGem's Business Profile (place id short code CWp4RQP5B4vkEAI).
+const GOOGLE_REVIEW_URL = 'https://g.page/r/CWp4RQP5B4vkEAI/review'
 
 export async function sendThankYouEmail({
   appointment,
