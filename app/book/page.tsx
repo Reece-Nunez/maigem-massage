@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Card } from '@/components/ui/card'
 import { LogoSpinner } from '@/components/ui/logo-spinner'
 import { SquarePayment } from './components/SquarePayment'
+import { trackEvent } from '@/lib/analytics/track'
 import type { Service } from '@/types/database'
 
 type BookingStep = 'service' | 'datetime' | 'contact' | 'payment' | 'confirm'
@@ -61,6 +62,12 @@ export default function BookingPage() {
       .then(res => res.json())
       .then(data => setServices(data))
       .catch(err => console.error('Failed to fetch services:', err))
+  }, [])
+
+  // Funnel: record that the visitor reached the booking page. This is the
+  // top of the on-page funnel; subsequent steps are logged from nextStep().
+  useEffect(() => {
+    trackEvent('booking_step', 'reached_page')
   }, [])
 
   // Fetch available slots when date changes
@@ -153,7 +160,15 @@ export default function BookingPage() {
       // Redirect to success page with appointment ID
       router.push(`/book/success?id=${data.appointment.id}`)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Something went wrong')
+      const message = err instanceof Error ? err.message : 'Something went wrong'
+      // Funnel: a visitor made it all the way to submit but the booking failed
+      // (payment declined, slot taken, server error). These are the highest-
+      // intent drop-offs, so log the reason to surface booking-blocking bugs.
+      trackEvent('booking_submit_failed', 'confirm', {
+        error: message,
+        payment_method: paymentMethod,
+      })
+      setError(message)
       setLoading(false)
     }
   }
@@ -182,10 +197,21 @@ export default function BookingPage() {
   }
 
   const nextStep = () => {
-    if (step === 'service') setStep('datetime')
-    else if (step === 'datetime') setStep('contact')
-    else if (step === 'contact') setStep('payment')
-    else if (step === 'payment') setStep('confirm')
+    // Funnel: log the step the visitor is completing as they advance. The
+    // source names the stage they finished, so drop-off is visible per stage.
+    if (step === 'service') {
+      trackEvent('booking_step', 'service_selected')
+      setStep('datetime')
+    } else if (step === 'datetime') {
+      trackEvent('booking_step', 'slot_selected')
+      setStep('contact')
+    } else if (step === 'contact') {
+      trackEvent('booking_step', 'contact_entered')
+      setStep('payment')
+    } else if (step === 'payment') {
+      trackEvent('booking_step', 'payment_chosen')
+      setStep('confirm')
+    }
   }
 
   const prevStep = () => {

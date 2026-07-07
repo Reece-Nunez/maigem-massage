@@ -12,6 +12,7 @@ const EVENT_LABELS: Record<string, string> = {
   email_click: 'Email Clicks',
   booking_started: 'Booking Started',
   booking_completed: 'Bookings Completed',
+  booking_submit_failed: 'Booking Errors',
   directions_click: 'Directions',
   contact_form_submit: 'Contact Form',
 }

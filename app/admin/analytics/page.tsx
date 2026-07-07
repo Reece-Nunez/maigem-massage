@@ -17,9 +17,25 @@ const EVENT_LABELS: Record<string, string> = {
   email_click: 'Email Clicks',
   booking_started: 'Booking Started',
   booking_completed: 'Bookings Completed',
+  booking_submit_failed: 'Booking Errors',
   directions_click: 'Directions',
   contact_form_submit: 'Contact Form',
 }
+
+// Ordered on-page booking funnel. Each stage after the first is a
+// booking_step event whose `source` names the stage the visitor completed;
+// the first and last stages reuse the existing booking_started/completed
+// events. Counts descend down the list — the biggest drop between two
+// adjacent stages is where visitors abandon the flow.
+const FUNNEL_STAGES: { key: string; label: string }[] = [
+  { key: 'booking_started', label: 'Clicked "Book"' },
+  { key: 'reached_page', label: 'Reached booking page' },
+  { key: 'service_selected', label: 'Selected a service' },
+  { key: 'slot_selected', label: 'Picked date & time' },
+  { key: 'contact_entered', label: 'Entered contact info' },
+  { key: 'payment_chosen', label: 'Chose payment' },
+  { key: 'booking_completed', label: 'Completed booking' },
+]
 
 export const dynamic = 'force-dynamic'
 
@@ -129,6 +145,18 @@ export default async function AnalyticsPage() {
       ? ((bookingCompleted30 / bookingStarted30) * 100).toFixed(1)
       : '—'
 
+  // Resolve each funnel stage to a 30d count. booking_started/completed are
+  // matched by event_type; the middle stages are booking_step events matched
+  // by source.
+  const stageCount = (key: string) =>
+    key === 'booking_started' || key === 'booking_completed'
+      ? totals30[key] || 0
+      : events.filter(
+          (e) => e.event_type === 'booking_step' && e.source === key
+        ).length
+  const funnel = FUNNEL_STAGES.map((s) => ({ ...s, count: stageCount(s.key) }))
+  const funnelMax = Math.max(1, ...funnel.map((s) => s.count))
+
   return (
     <div>
       <h1 className="text-2xl sm:text-3xl font-bold text-foreground mb-2">Analytics</h1>
@@ -178,6 +206,53 @@ export default async function AnalyticsPage() {
           </Card>
         </Link>
       </div>
+
+      <Card className="p-4 sm:p-6 mb-6 sm:mb-8">
+        <h3 className="text-base sm:text-lg font-bold text-foreground mb-1">
+          Booking Funnel (Last 30 Days)
+        </h3>
+        <p className="text-text-muted text-xs mb-4">
+          Where visitors drop off between clicking “Book” and finishing. The
+          biggest fall between two stages is the step to fix first.
+        </p>
+        <div className="space-y-2">
+          {funnel.map((s, i) => {
+            const prev = i > 0 ? funnel[i - 1].count : null
+            const dropPct =
+              prev && prev > 0
+                ? Math.round(((prev - s.count) / prev) * 100)
+                : null
+            return (
+              <div key={s.key} className="flex items-center gap-3 text-sm">
+                <span className="w-32 sm:w-48 text-foreground text-xs flex-shrink-0">
+                  {s.label}
+                </span>
+                <div className="flex-1 bg-secondary/20 rounded-full h-6 overflow-hidden">
+                  <div
+                    className="bg-primary h-full rounded-full transition-all"
+                    style={{ width: `${(s.count / funnelMax) * 100}%` }}
+                  />
+                </div>
+                <span className="w-10 text-right text-foreground font-medium text-xs flex-shrink-0">
+                  {s.count}
+                </span>
+                <span className="w-14 text-right text-xs flex-shrink-0 text-text-muted">
+                  {dropPct !== null && dropPct > 0 ? (
+                    <span className="text-red-500">−{dropPct}%</span>
+                  ) : (
+                    ''
+                  )}
+                </span>
+              </div>
+            )
+          })}
+        </div>
+        <p className="text-text-muted text-xs mt-4">
+          Note: “Clicked Book” counts homepage button clicks; visitors who
+          reach <code>/book</code> directly (search, saved link) start at
+          “Reached booking page”, so that row can exceed the one above it.
+        </p>
+      </Card>
 
       {topPages.length > 0 && (
         <Card className="p-4 sm:p-6 mb-6 sm:mb-8">

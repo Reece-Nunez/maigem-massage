@@ -2,6 +2,8 @@ type EventType =
   | 'phone_click'
   | 'email_click'
   | 'booking_started'
+  | 'booking_step'
+  | 'booking_submit_failed'
   | 'booking_completed'
   | 'directions_click'
   | 'contact_form_submit'
